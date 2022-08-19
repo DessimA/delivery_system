@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="shortcut icon" href="/img/" type="image/x-icon">
+    <title>Cardápio</title>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+</head>
+
+<body>
+
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark ">
+        <div class="col-sm-4">
+            <a class="navbar-brand" href="#"><img src="/img/logo.png" width="100"></a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Alterna navegação">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+        <div class="collapse navbar-collapse col-sm-9" id="navbarNav">
+            <ul class="nav justify-content-end">
+                <li class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/">Home</a>
+                </li>
+                <li class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/produto/cardapio">Cardápio</a>
+                </li>
+                <li class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/pessoa/formulario">Cadastro</a>
+                </li>
+                <li sec:authorize="hasRole('ROLE_ADMIN')" class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/produto/formulario">Cadastrar Produto</a>
+                </li>
+                <li  sec:authorize="hasRole('ROLE_ADMIN')"  class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/produto/listar">Listar Produto</a>
+                </li>
+                <li  sec:authorize="hasRole('ROLE_USER')"  class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/pessoa/listarpedidos">Histórico de compras</a>
+                </li>
+                <li sec:authorize="hasRole('ROLE_ADMIN')" class="nav-item col-sm">
+                    <a class="btn btn-outline-warning" href="/logout">Sair</a>
+                </li>
+                <li sec:authorize="hasRole('ROLE_USER')" class="nav-item col-sm">
+					<a class="btn btn-outline-light" href="/pedido/listar">Ver carrinho</a>
+				</li>
+                <li sec:authorize="hasRole('ROLE_USER')" class="nav-item col-sm">
+                    <a class="btn btn-outline-warning" href="/logout">Sair</a>
+                </li>
+            </ul>
+            <a sec:authorize="!isAuthenticated()" href="/pessoa/logar" class="btn btn-outline-danger navbar-btn">Entrar</a>
+        </div>
+    </nav>
+
+
+		<div class="container my-5">
+		<center>
+			<h1>PRATOS DO DIA</h1>
+		</center>
+		<br>
+		<div class="row justify-content-center">
+			<div th:each="produto : ${listaDeProdutos}"
+				class="card col-sm6 m-2" style="width: 15rem;">
+				<img th:src="@{'/images/'+${produto.nomeProduto}+.png}"
+					class="card-img-top" height="200">
+				<div class="card-body">
+					<center>
+						<h5 th:text="${produto.nomeProduto}" class="card-title"></h5>
+						<p th:text="'R$ ' + ${produto.preco} " class="card-text"></p>
+						<a	sec:authorize="!hasRole('ROLE_ADMIN')" 
+						th:href="@{/produto/comprar/{idProduto} (idProduto = ${produto.idProduto})}" 
+						class="btn btn-success">Adicionar</a>
+					</center>
+				</div>
+			</div>
+
+		</div>
+
+	</div>
+
+        <!--  <div class="col-sm-12">
+
+            <div class="col-sm-12">
+                <div class="row">
+                    <div class="card col-sm6 m-2 d-flex align-items-center" style="width: 18rem; ">
+                        <img class="card-img-top" src="/img/prato_restaurante.png" alt="Imagem de capa do card">
+                        <div class="card-body">
+                            <h5 class="card-title">Nome</h5>
+                            <p class="card-text">R$ 12.50</p>
+                            <a href="#" class="btn btn-success">Adicionar</a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            
+        </div>-->
+
+
+    <div class="card text-center col">
+        <div class="card-header">
+            Bacharelado em Sistemas da Informação
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">Redes Sociais</h5>
+            <div>
+                <img src="/img/redes-sociais.png" width="150" class="img-fluid" alt="Imagem responsiva"> </div>
+        </div>
+        <div class="card-footer text-muted">
+            &copy; 2022 IFCE - Cedro
+        </div>
+    </div>
+
+    <script src="/js/bootstrap.min.js"></script>
+
+</body>
+
+</html>

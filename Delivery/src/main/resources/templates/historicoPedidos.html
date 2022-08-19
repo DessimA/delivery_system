@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>Historico</title>
+<link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css">
+</head>
+<body>
+	    <nav class="navbar navbar-expand-lg navbar-dark bg-dark ">
+        <div class="col-sm-4">
+            <a class="navbar-brand" href="#"><img src="/img/logo.png" width="100"></a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Alterna navegação">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+        <div class="collapse navbar-collapse col-sm-9" id="navbarNav">
+            <ul class="nav justify-content-end">
+                <li class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/">Home</a>
+                </li>
+                <li class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/produto/cardapio">Cardápio</a>
+                </li>
+                <li class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/pessoa/formulario">Cadastro</a>
+                </li>
+                <li sec:authorize="hasRole('ROLE_ADMIN')" class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/produto/formulario">Cadastrar Produto</a>
+                </li>
+                <li  sec:authorize="hasRole('ROLE_ADMIN')"  class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/produto/listar">Listar Produto</a>
+                </li>
+                <li  sec:authorize="hasRole('ROLE_USER')"  class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/pessoa/listarpedidos">Histórico de compras</a>
+                </li>
+                <li sec:authorize="hasRole('ROLE_ADMIN')" class="nav-item col-sm">
+                    <a class="btn btn-outline-warning" href="/logout">Sair</a>
+                </li>
+                <li sec:authorize="hasRole('ROLE_USER')" class="nav-item col-sm">
+					<a class="btn btn-outline-light" href="/pedido/listar">Ver carrinho</a>
+				</li>
+                <li sec:authorize="hasRole('ROLE_USER')" class="nav-item col-sm">
+                    <a class="btn btn-outline-warning" href="/logout">Sair</a>
+                </li>
+            </ul>
+            <a sec:authorize="!isAuthenticated()" href="/pessoa/logar" class="btn btn-outline-danger navbar-btn">Entrar</a>
+        </div>
+    </nav>
+
+	<div class="container col-12">
+		<h1 style="text-align:center;">Histórico de compras</h1>
+		<table class="table  table-striped  table-bordered table-hover table-responsive-sm">
+			<thead class="thead-dark">
+				<tr>
+					<th scope="col">Codigo</th>
+					<th scope="col">Endereco</th>
+					<th scope="col">Valor</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr th:each="pedido : ${historicoPedidos}">
+					<td th:text="${pedido.codigoPedido}"></td>
+					<td th:text="${pedido.enderecoPedido}"></td>
+					<td th:text="${pedido.valorTotal}"></td> 
+				</tr>
+			</tbody>
+		</table>
+	</div>
+	<script src="/js/bootstrap.min.js"></script>
+</body>
+</html>

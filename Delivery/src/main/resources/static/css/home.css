@@ -1,0 +1,85 @@
+*{
+    margin: 0;
+    padding: 0;
+}
+
+#conteudo{
+
+    height: 100vh;
+    background-image: url("/img/temperos.jpg");
+     background-repeat: no-repeat;
+     background-size: cover;
+     background-position: center;
+}
+
+#conteudo-interno{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    /* border: 1px solid black; */
+}
+
+#nav{
+    /* border: 1px solid black; */
+    border-radius: 10px; 
+    height: 8vh;
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    background: rgba(000, 000, 000, 0.5);
+}
+
+#titulo {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+#titulo h2{
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    color: white;
+
+}
+
+#menu{
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    /* border: 1px solid violet; */
+}
+
+#menu a{ padding: 1%; color: #fff;}
+
+
+
+#apresentacao {
+    /* border: 1px solid red; */
+    display: flex;
+    justify-content: center;
+    flex-direction: row;
+    align-items: center;
+    margin-top: 20%;
+}
+
+#apresentacao h1{
+    text-transform: uppercase;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #fff;
+    /* border-right: 3px solid #fff; */
+    margin-top: 1%;
+    padding: 2%;
+    
+}
+
+
+#apresentacao h2{
+    text-transform: uppercase;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #fff;
+    border-left: 3px solid #fff;
+    margin-left: 5%;
+    margin-top: 1%;
+    padding: 2%;
+    font-size: 1em;
+}

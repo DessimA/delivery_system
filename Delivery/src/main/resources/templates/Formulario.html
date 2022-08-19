@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5"
+xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="shortcut icon" href="/img/" type="image/x-icon">
+    <title>Home</title>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+</head>
+
+<body>
+
+       <nav class="navbar navbar-expand-lg navbar-dark bg-dark ">
+        <div class="col-sm-4">
+            <a class="navbar-brand" href="#"><img src="/img/logo.png" width="100"></a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Alterna navegação">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+        <div class="collapse navbar-collapse col-sm-9" id="navbarNav">
+            <ul class="nav justify-content-end">
+                <li class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/">Home</a>
+                </li>
+                <li class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/produto/cardapio">Cardápio</a>
+                </li>
+                <li class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/pessoa/formulario">Cadastro</a>
+                </li>
+                <li sec:authorize="hasRole('ROLE_ADMIN')" class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/produto/formulario">Cadastrar Produto</a>
+                </li>
+                <li  sec:authorize="hasRole('ROLE_ADMIN')"  class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/produto/listar">Listar Produto</a>
+                </li>
+                <li  sec:authorize="hasRole('ROLE_USER')"  class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/pessoa/listarpedidos">Histórico de compras</a>
+                </li>
+                <li sec:authorize="hasRole('ROLE_ADMIN')" class="nav-item col-sm">
+                    <a class="btn btn-outline-warning" href="/logout">Sair</a>
+                </li>
+                <li sec:authorize="hasRole('ROLE_USER')" class="nav-item col-sm">
+					<a class="btn btn-outline-light" href="/pedido/listar">Ver carrinho</a>
+				</li>
+                <li sec:authorize="hasRole('ROLE_USER')" class="nav-item col-sm">
+                    <a class="btn btn-outline-warning" href="/logout">Sair</a>
+                </li>
+            </ul>
+            <a sec:authorize="!isAuthenticated()" href="/pessoa/logar" class="btn btn-outline-danger navbar-btn">Entrar</a>
+        </div>
+    </nav>
+    <div class="container" style="height: 23.5rem;">
+
+        
+        <center style="margin-top: 2%;">
+                <h1 style="margin-bottom: 5%;">Fomulário Cadastro</h1>
+                <form action="/pessoa/salvar" method="post" th:object="${pessoa}">
+
+                    <input type="hidden" th:field="*{codigo}">
+
+					<div class="alert alert-success" role="alert"
+			            th:if="${!#strings.isEmpty(mensagem)}">
+			            <span th:text="${mensagem}"></span>
+		            </div>
+
+		<div class="alert alert-danger" th:if="${#fields.hasAnyErrors()}">
+			<div th:each="detailedError : ${#fields.detailedErrors()}">
+				<span th:text="${detailedError.message}"> </span>
+			</div>
+		</div>
+
+                    <div class="form-row">
+                      <div class="form-group col-md-6">
+                        <label >Nome</label>
+                        <input type="text" class="form-control"
+                            name="nome" th:field="*{nome}" placeholder="Nome">
+                      </div>
+                      <div class="form-group col-md-6">
+                        <label >CPF</label>
+                        <input type="text" class="form-control" name="cpf" th:field="*{cpf}" id="cpf" placeholder="000.000.000-00">
+                      </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                          <label >Data-Nascimento</label>
+                          <input type="text" class="form-control" placeholder="dd/mm/aaaa"
+                        	th:field="*{dataNascimento}" id="data">
+                        </div>
+                        <div class="form-group col-md-4">
+                          <label >Email</label>
+                          <input type="text" class="form-control" 
+                                placeholder="email@gmail.com" name="email" th:field="*{email}">
+                        </div>
+                        <div class="form-group col-md-4">
+                          <label >Senha</label>
+                          <input type="password" class="form-control" name="senha" th:field="*{senha}" placeholder="Senha">
+                        </div>
+                        <div class="form-group col-md-12">
+                          <label >Endereço</label>
+                          <input type="text" class="form-control" name="endereco" 
+                            th:field="*{endereco}" placeholder="Rua nome, 366">
+                        </div>
+                     </div>
+                
+                    
+                    <button type="submit" 
+                    class="btn btn-danger btn-block btn-lg col-md-12" style="width: 15.5rem; margin-top: 4%;">
+                        Cadastrar
+                    </button>
+                  </form>
+
+                 
+
+        </center>
+
+        <div class="card text-center col" style="margin-top: 2%;">
+       
+                <div class="card-footer text-muted">
+                    &copy; 2022 IFCE - Cedro
+                </div>
+            </div>
+
+    </div>
+
+
+
+    <script src="/js/bootstrap.min.js"></script>
+    <script src="/js/jquery.mask.min.js"></script>
+    <script src="/js/script.js"></script>
+
+</body>
+
+</html>

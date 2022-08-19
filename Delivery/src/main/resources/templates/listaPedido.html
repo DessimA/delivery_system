@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>Pedido</title>
+<link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css">
+</head>
+<body>
+	<nav class="navbar navbar-expand-lg navbar-dark bg-dark ">
+		<div class="col-sm-4">
+			<a class="navbar-brand" href="#"><img src="/img/logo.png"
+				width="100"></a>
+			<button class="navbar-toggler" type="button" data-toggle="collapse"
+				data-target="#navbarNav" aria-controls="navbarNav"
+				aria-expanded="false" aria-label="Alterna navegação">
+				<span class="navbar-toggler-icon"></span>
+			</button>
+		</div>
+		<div class="collapse navbar-collapse col-sm-9" id="navbarNav">
+			<ul class="nav justify-content-end">
+				<li class="nav-item col-sm"><a class="btn btn-outline-light"
+					href="/">Home</a></li>
+				<li class="nav-item col-sm"><a class="btn btn-outline-light"
+					href="/produto/cardapio">Cardápio</a></li>
+				<li class="nav-item col-sm"><a class="btn btn-outline-light"
+					href="/pessoa/formulario">Cadastro</a></li>
+				<li sec:authorize="hasRole('ROLE_ADMIN')" class="nav-item col-sm">
+					<a class="btn btn-outline-light" href="/produto/formulario">Cadastrar
+						Produto</a>
+				</li>
+				<li sec:authorize="hasRole('ROLE_ADMIN')" class="nav-item col-sm">
+					<a class="btn btn-outline-light" href="/produto/listar">Listar
+						Produto</a>
+				</li>
+				<li sec:authorize="hasRole('ROLE_USER')" class="nav-item col-sm">
+					<a class="btn btn-outline-light" href="/pessoa/listarpedidos">Histórico
+						de compras</a>
+				</li>
+				<li sec:authorize="hasRole('ROLE_ADMIN')" class="nav-item col-sm">
+					<a class="btn btn-outline-warning" href="/logout">Sair</a>
+				</li>
+				<li sec:authorize="hasRole('ROLE_USER')" class="nav-item col-sm">
+					<a class="btn btn-outline-light" href="/pedido/listar">Ver
+						carrinho</a>
+				</li>
+				<li sec:authorize="hasRole('ROLE_USER')" class="nav-item col-sm">
+					<a class="btn btn-outline-warning" href="/logout">Sair</a>
+				</li>
+			</ul>
+			<a sec:authorize="!isAuthenticated()" href="/pessoa/logar"
+				class="btn btn-outline-danger navbar-btn">Entrar</a>
+		</div>
+	</nav>
+
+	<div class="container col-12">
+	
+		<center>
+			<div class="card border-success mt-4 mb-4 col-sm-6"
+				style="max-width: 20rem;">
+
+				<div class="card-body text-success">
+					<h1 style="text-align: center;" class="card-title">Valor a
+						pagar</h1>
+					<h2 style="text-align: center;" th:text="${'R$ ' + valorTotal}">RS</h2>
+				</div>
+
+			</div>
+		</center>
+		<center>
+
+			<table class="table table-striped">
+				<thead>
+					<tr >
+						<th scope="col">#</th>
+						<th scope="col">Nome</th>
+						<th scope="col">Preço</th>
+						<th scope="col">Excluir</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr th:each="produto : ${listarProdutosPedido}">
+						<th <td th:text="${produto.idProduto}"></td>></th>
+						<td th:text="${produto.nomeProduto}"></td>
+						<td th:text="'R$ ' + ${produto.preco} "></td>
+						<td><a sec:authorize="!hasRole('ROLE_ADMIN')"
+								th:href="@{/pedido/excluir/{idProduto} (idProduto = ${produto.idProduto})}"
+								class="btn btn-danger">Cancelar</a></td>
+					</tr>
+				</tbody>
+			</table>
+
+
+			<form method="post" action="/pedido/confirmar" class="col-sm-8">
+				<input class="form-control col-md-5"
+					placeholder="Insira seu endereço aqui" required="required"
+					type="text" name="enderecoPedido"> <br> <a
+					class="btn btn-outline-info" href="/produto/cardapio">Continuar
+					Comprando</a> <input th:if="${!listarProdutosPedido.isEmpty()}"
+					type="submit" class="btn btn-success" value="Confirmar">
+				<hr>
+			</form>
+		</center>
+
+
+	</div>
+
+	<div class="card text-center col">
+		<div class="card-header">Bacharelado em Sistemas da Informação</div>
+		<div class="card-body">
+			<h5 class="card-title">Redes Sociais</h5>
+			<div>
+				<img src="/img/redes-sociais.png" width="150" class="img-fluid"
+					alt="Imagem responsiva">
+			</div>
+		</div>
+		<div class="card-footer text-muted">&copy; 2022 IFCE - Cedro</div>
+	</div>
+	<script src="/js/bootstrap.min.js"></script>
+</body>
+</html>

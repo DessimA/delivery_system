@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="shortcut icon" href="/img/" type="image/x-icon">
+    <title>Home</title>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+</head>
+
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #000000;">
+        <div class="col-sm-4">
+            <a class="navbar-brand" href="#"><img src="/img/logo.png" width="100"></a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Alterna navegação">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+        <div class="collapse navbar-collapse col-sm-9" id="navbarNav">
+            <ul class="nav justify-content-end">
+                <li class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/">Home</a>
+                </li>
+                <li class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/produto/cardapio">Cardápio</a>
+                </li>
+                <li class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/pessoa/formulario">Cadastro</a>
+                </li>
+                <li sec:authorize="hasRole('ROLE_ADMIN')" class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/produto/formulario">Cadastrar Produto</a>
+                </li>
+                <li  sec:authorize="hasRole('ROLE_ADMIN')"  class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/produto/listar">Listar Produto</a>
+                </li>
+                <li  sec:authorize="hasRole('ROLE_USER')"  class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/pessoa/listarpedidos">Histórico de compras</a>
+                </li>
+                <li sec:authorize="hasRole('ROLE_ADMIN')" class="nav-item col-sm">
+                    <a class="btn btn-outline-warning" href="/logout">Sair</a>
+                </li>
+                <li sec:authorize="hasRole('ROLE_USER')" class="nav-item col-sm">
+					<a class="btn btn-outline-light" href="/pedido/listar">Ver carrinho</a>
+				</li>
+                <li sec:authorize="hasRole('ROLE_USER')" class="nav-item col-sm">
+                    <a class="btn btn-outline-warning" href="/logout">Sair</a>
+                </li>
+            </ul>
+            <a sec:authorize="!isAuthenticated()" href="/pessoa/logar" class="btn btn-outline-danger navbar-btn">Entrar</a>
+        </div>
+    </nav>
+    <div class="container d-flex align-items-center">
+
+        <div class="col-sm-12">
+            <div id="carouselExampleSlidesOnly" class="carousel slide" data-ride="carousel">
+                <div class="carousel-inner">
+                    <div class="carousel-item active">
+                        <img class="d-block w-100" src="/img/01.jpg" alt="Primeiro Slide">
+                    </div>
+                    <div class="carousel-item">
+                        <img class="d-block w-100" src="/img/02.jpg" alt="Segundo Slide">
+                    </div>
+                    <div class="carousel-item">
+                        <img class="d-block w-100" src="/img/03.jpg" alt="Segundo Slide">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <center>
+        <div class="col-sm-12 row d-flex align-items-center">
+
+            <div class="col-sm-6">
+                <h1>Faça já o seu pedido!</h1>
+                <h3>Promoções imperdíveis</h3>
+                <a class="btn btn-danger" href="/pessoa/formulario">Cadastre-se</a>
+            </div>
+
+            <div class="col-sm-5">
+                <img src="/img/prato_restaurante.png" class="img-fluid" alt="Imagem responsiva">
+            </div>
+        </div>
+    </center>
+
+    <center>
+        <div class="col-sm-12 row d-flex align-items-center">
+
+            <div class="col-sm-6">
+                <h1>Teremos um APP</h1>
+                <h3>EM BREVE!</h3>
+            </div>
+
+            <div class="col-sm-5">
+                <img src="/img/cel.png" class="img-fluid" alt="Imagem responsiva">
+            </div>
+        </div>
+    </center>
+
+    </div>
+
+    <div class="card text-center col">
+        <div class="card-header">
+            Bacharelado em Sistemas da Informação
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">Redes Sociais</h5>
+            <div>
+                <img src="/img/redes-sociais.png" width="150" class="img-fluid" alt="Imagem responsiva"> </div>
+        </div>
+        <div class="card-footer text-muted">
+            &copy; 2022 IFCE - Cedro
+        </div>
+    </div>
+
+    <script src="/js/bootstrap.min.js"></script>
+
+</body>
+
+</html>

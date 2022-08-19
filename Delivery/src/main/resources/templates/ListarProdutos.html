@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="shortcut icon" href="/img/" type="image/x-icon">
+    <title>Listar Produtos</title>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+</head>
+
+<body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark ">
+        <div class="col-sm-4">
+            <a class="navbar-brand" href="#"><img src="/img/logo.png" width="100"></a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Alterna navegação">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+        <div class="collapse navbar-collapse col-sm-9" id="navbarNav">
+            <ul class="nav justify-content-end">
+                <li class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/">Home</a>
+                </li>
+                <li class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/produto/cardapio">Cardápio</a>
+                </li>
+                <li class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/pessoa/formulario">Cadastro</a>
+                </li>
+                <li sec:authorize="hasRole('ROLE_ADMIN')" class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/produto/formulario">Cadastrar Produto</a>
+                </li>
+                <li  sec:authorize="hasRole('ROLE_ADMIN')"  class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/produto/listar">Listar Produto</a>
+                </li>
+                <li  sec:authorize="hasRole('ROLE_USER')"  class="nav-item col-sm">
+                    <a class="btn btn-outline-light" href="/pessoa/listarpedidos">Histórico de compras</a>
+                </li>
+                <li sec:authorize="hasRole('ROLE_ADMIN')" class="nav-item col-sm">
+                    <a class="btn btn-outline-warning" href="/logout">Sair</a>
+                </li>
+                <li sec:authorize="hasRole('ROLE_USER')" class="nav-item col-sm">
+					<a class="btn btn-outline-light" href="/pedido/listar">Ver carrinho</a>
+				</li>
+                <li sec:authorize="hasRole('ROLE_USER')" class="nav-item col-sm">
+                    <a class="btn btn-outline-warning" href="/logout">Sair</a>
+                </li>
+            </ul>
+            <a sec:authorize="!isAuthenticated()" href="/pessoa/logar" class="btn btn-outline-danger navbar-btn">Entrar</a>
+        </div>
+    </nav>
+    <div class="container">
+
+        <h1>Cardápio</h1>
+
+
+        <div class="col-sm-12">
+
+            <table class="table">
+                <thead class="thead-dark">
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Nome</th>
+                        <th scope="col">Preço</th>
+                        <th scope="col">Excluir</th>
+                        <th scope="col">Atualizar</th>
+                        <th scope="col">Imagem</th>
+                    </tr>
+                </thead>
+                <tbody th:each="produto : ${listaDeProdutos}">
+                    <tr>
+                        <td th:text="${produto.idProduto}"></td>
+                        <td th:text="${produto.nomeProduto}"></td>
+                        <td th:text="${produto.preco}"></td>
+                        <td> <a class="btn btn-danger"
+                                th:href="@{/produto/excluir/{idProduto}(idProduto = ${produto.idProduto})}">Excluir</a>
+                        </td>
+                        <td> <a class="btn btn-primary"
+                                th:href="@{/produto/atualizar/{idProduto}(idProduto = ${produto.idProduto})}">Atualizar</a>
+                        </td>
+                        <td sec:authorize="hasRole('ROLE_USER')"> <a class="btn btn-success">Adicionar</a> </td>
+                        <td> <img width="150" height="150" th:src="@{'/images/'+${produto.nomeProduto}+.png}"> </td>
+                    </tr>
+            </table>
+        </div>
+
+
+
+
+    </div>
+
+    <div class="card text-center col">
+        <div class="card-header">
+            Bacharelado em Sistemas da Informação
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">Redes Sociais</h5>
+            <div>
+                <img src="/img/redes-sociais.png" width="150" class="img-fluid" alt="Imagem responsiva"> </div>
+        </div>
+        <div class="card-footer text-muted">
+            &copy; 2022 IFCE - Cedro
+        </div>
+    </div>
+
+    <script src="/js/bootstrap.min.js"></script>
+
+</body>
+
+</html>
