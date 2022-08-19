@@ -114,16 +114,16 @@ ou USER(Cliente usuário).
   
   :three: No postgres, crie na tabela Role, os seguintes dados: ROLE_ADMIN e ROLE_USER, como o exemplo abaixo:
   
-      ```sql
+      sql
         INSERT INTO ROLE(papel) VALUES('ROLE_ADMIN'),('ROLE_USER);
-      ```
+      
   :four: OBS: No sistema, todos que se cadastrarem serão usuário, então crie um usuário admin da seguinte forma:
           
-      Cadastre-se normalmente no sistema. No banco de dados, liste as pessoas cadastradas, veja qual o 
-      Código da pessoa, e então atribua o papel de AMIN à ela da seguinte forma:
+Cadastre-se normalmente no sistema. No banco de dados, liste as pessoas cadastradas, veja qual o 
+Código da pessoa, e então atribua o papel de AMIN à ela da seguinte forma:
           
-      ```sql
+      sql
          INSERT INTO PESSOAS_ROLES VALUES(1,'ROLE_ADMIN')
-      ```
+      
           
-     O primeiro campo passado no _values_ é o código da pessoa, e o seguindo campo é a role(o papel dela no sistema)
+O primeiro campo passado no _values_ é o código da pessoa, e o seguindo campo é a role(o papel dela no sistema)
