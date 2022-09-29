@@ -122,7 +122,7 @@ ou USER(Cliente usuário).
   :four: OBS: No sistema, todos que se cadastrarem serão usuário, então crie um usuário admin da seguinte forma:
           
 Cadastre-se normalmente no sistema. No banco de dados, liste as pessoas cadastradas, veja qual o 
-Código da pessoa, e então atribua o papel de AMIN à ela da seguinte forma:
+Código da pessoa, e então atribua o papel de ADMIN à ela da seguinte forma:
           
       sql
          INSERT INTO PESSOAS_ROLES VALUES(1,'ROLE_ADMIN')
