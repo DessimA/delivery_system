@@ -1,4 +1,4 @@
-# :clipboard: Projeto Final - Sistema de Delivery
+# :clipboard: Sistema de Delivery
 
 ### :one: Descrição
 
