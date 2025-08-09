@@ -3,7 +3,10 @@ package com.delivery.mapper;
 import com.delivery.dto.UsuarioRequestDTO;
 import com.delivery.dto.UsuarioResponseDTO;
 import com.delivery.model.Pessoa;
+import com.delivery.model.Role;
 import org.springframework.stereotype.Component;
+
+import java.util.stream.Collectors;
 
 @Component
 public class UsuarioMapper {
@@ -27,6 +30,11 @@ public class UsuarioMapper {
         dto.setDataNascimento(pessoa.getDataNascimento());
         dto.setEndereco(pessoa.getEndereco());
         dto.setEmail(pessoa.getEmail());
+        if (pessoa.getRoles() != null) {
+            dto.setRoles(pessoa.getRoles().stream()
+                    .map(Role::getPapel)
+                    .collect(Collectors.toList()));
+        }
         return dto;
     }
 }

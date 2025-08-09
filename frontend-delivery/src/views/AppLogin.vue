@@ -48,6 +48,10 @@ export default {
         const token = response.data.accessToken;
         if (token) {
           localStorage.setItem('authToken', token);
+
+          // Após salvar o token, busca os dados do usuário
+          const userResponse = await api.get('/usuarios/me');
+          localStorage.setItem('user', JSON.stringify(userResponse.data));
           
           // Dispara um evento para que o Navbar possa reagir à mudança de status de login
           window.dispatchEvent(new Event('storage'));
@@ -60,6 +64,7 @@ export default {
       } catch (err) {
         this.error = 'Erro ao fazer login. Verifique suas credenciais.';
         localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
         console.error('Erro de login:', err);
       }
     },

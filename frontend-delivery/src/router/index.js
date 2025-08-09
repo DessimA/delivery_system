@@ -4,6 +4,8 @@ import AppLogin from '../views/AppLogin.vue';
 import AppRegister from '../views/AppRegister.vue';
 import AppProducts from '../views/AppProducts.vue';
 import AppCart from '../views/AppCart.vue';
+import RestaurantDashboard from '../views/RestaurantDashboard.vue';
+import DeliveryDashboard from '../views/DeliveryDashboard.vue'; // Importar o novo componente
 
 const routes = [
   {
@@ -30,6 +32,19 @@ const routes = [
     path: '/cart',
     name: 'Cart',
     component: AppCart,
+    meta: { requiresAuth: true } // Rota protegida geral
+  },
+  {
+    path: '/restaurant/dashboard',
+    name: 'RestaurantDashboard',
+    component: RestaurantDashboard,
+    meta: { requiresAuth: true, roles: ['RESTAURANT'] } // Rota protegida por role
+  },
+  {
+    path: '/delivery/dashboard',
+    name: 'DeliveryDashboard',
+    component: DeliveryDashboard,
+    meta: { requiresAuth: true, roles: ['DELIVERY'] } // Rota protegida por role
   },
 ];
 
@@ -40,16 +55,32 @@ const router = createRouter({
 
 // Navegação de guarda para rotas protegidas
 router.beforeEach((to, from, next) => {
-  const publicPages = ['/', '/login', '/register', '/products']; // Produtos é pública para visualização
-  const authRequired = !publicPages.includes(to.path);
   const loggedIn = localStorage.getItem('authToken');
+  const user = JSON.parse(localStorage.getItem('user'));
 
-  // Se a rota requer autenticação e o usuário não está logado, redireciona para a página de login
-  if (authRequired && !loggedIn) {
-    return next('/login');
+  if (to.matched.some(record => record.meta.requiresAuth)) {
+    if (!loggedIn) {
+      // Redireciona para o login se a rota exige autenticação e não há token
+      return next('/login');
+    }
+
+    // Verifica as roles se a rota exigir
+    if (to.meta.roles) {
+      if (user && user.roles && to.meta.roles.some(role => user.roles.includes(role))) {
+        // Se o usuário tem a role necessária, permite o acesso
+        next();
+      } else {
+        // Se não tem a role, redireciona para uma página de acesso negado ou para a home
+        next('/'); // Ou para uma página '/unauthorized'
+      }
+    } else {
+      // Se a rota só exige autenticação, permite o acesso
+      next();
+    }
+  } else {
+    // Se a rota não exige autenticação, permite o acesso
+    next();
   }
-
-  next();
 });
 
 export default router;

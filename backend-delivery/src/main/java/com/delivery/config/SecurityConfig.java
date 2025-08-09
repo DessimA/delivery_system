@@ -59,6 +59,14 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT, "/api/produtos/**").hasAnyRole("ADMIN", "RESTAURANT")
                 .requestMatchers(HttpMethod.DELETE, "/api/produtos/**").hasAnyRole("ADMIN", "RESTAURANT")
                 .requestMatchers(HttpMethod.GET, "/api/pedidos").hasRole("ADMIN")
+                .requestMatchers("/api/restaurante/**").hasRole("RESTAURANT")
+
+                // Rotas de entregador
+                .requestMatchers(HttpMethod.POST, "/api/entregas").hasRole("ADMIN") // Apenas ADMIN cria entregas
+                .requestMatchers(HttpMethod.GET, "/api/entregas/disponiveis").hasRole("DELIVERY")
+                .requestMatchers(HttpMethod.POST, "/api/entregas/{id}/aceitar").hasRole("DELIVERY")
+                .requestMatchers(HttpMethod.PUT, "/api/entregas/{id}/status").hasAnyRole("ADMIN", "DELIVERY")
+                .requestMatchers(HttpMethod.GET, "/api/entregas/minhas").hasRole("DELIVERY")
 
                 // Rotas de usuário autenticado
                 .requestMatchers("/api/usuarios/me/**").authenticated()

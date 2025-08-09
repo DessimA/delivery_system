@@ -13,6 +13,12 @@
           <li class="nav-item">
             <router-link class="nav-link" to="/cart">Carrinho</router-link>
           </li>
+          <li class="nav-item" v-if="isRestaurantOwner">
+            <router-link class="nav-link" to="/restaurant/dashboard">Meu Restaurante</router-link>
+          </li>
+          <li class="nav-item" v-if="isDeliveryUser">
+            <router-link class="nav-link" to="/delivery/dashboard">Minhas Entregas</router-link>
+          </li>
         </ul>
         <ul class="navbar-nav">
           <li class="nav-item" v-if="!isLoggedIn">
@@ -21,8 +27,13 @@
           <li class="nav-item" v-if="!isLoggedIn">
             <router-link class="nav-link" to="/register">Registrar</router-link>
           </li>
-          <li class="nav-item" v-if="isLoggedIn">
-            <a class="nav-link" href="#" @click.prevent="logout">Logout</a>
+          <li class="nav-item dropdown" v-if="isLoggedIn">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              {{ userEmail }}
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+              <li><a class="dropdown-item" href="#" @click.prevent="logout">Logout</a></li>
+            </ul>
           </li>
         </ul>
       </div>
@@ -36,22 +47,43 @@ export default {
   data() {
     return {
       isLoggedIn: false,
+      user: null,
     };
+  },
+  computed: {
+    isRestaurantOwner() {
+      return this.user && this.user.roles && this.user.roles.includes('RESTAURANT');
+    },
+    isDeliveryUser() {
+      return this.user && this.user.roles && this.user.roles.includes('DELIVERY');
+    },
+    userEmail() {
+        return this.user ? this.user.email : '';
+    }
   },
   created() {
     this.checkLoginStatus();
-    window.addEventListener('storage', this.checkLoginStatus); // Reage a mudanças no localStorage
+    window.addEventListener('storage', this.checkLoginStatus);
   },
   beforeUnmount() {
     window.removeEventListener('storage', this.checkLoginStatus);
   },
   methods: {
     checkLoginStatus() {
-      this.isLoggedIn = !!localStorage.getItem('authToken');
+      const token = localStorage.getItem('authToken');
+      this.isLoggedIn = !!token;
+      if (this.isLoggedIn) {
+        this.user = JSON.parse(localStorage.getItem('user'));
+      } else {
+        this.user = null;
+      }
     },
     logout() {
       localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
       this.isLoggedIn = false;
+      this.user = null;
+      window.dispatchEvent(new Event('storage')); // Notifica outros componentes
       this.$router.push('/login');
     },
   },

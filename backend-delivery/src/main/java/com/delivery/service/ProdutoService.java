@@ -44,6 +44,17 @@ public class ProdutoService {
                 .collect(Collectors.toList());
     }
 
+    public List<ProdutoResponseDTO> listarDoMeuEstabelecimento() {
+        Pessoa pessoa = getAuthenticatedUser();
+        if (pessoa.getEstabelecimento() == null) {
+            throw new IllegalStateException("Usuário não é dono de um estabelecimento.");
+        }
+        Long estabelecimentoId = pessoa.getEstabelecimento().getId();
+        return produtoRepository.findByEstabelecimentoId(estabelecimentoId).stream()
+                .map(produtoMapper::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
     public ProdutoResponseDTO buscarPorId(Long id) {
         return produtoRepository.findById(id)
                 .map(produtoMapper::toResponseDTO)

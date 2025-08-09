@@ -2,8 +2,11 @@ package com.delivery.controller;
 
 import com.delivery.dto.UsuarioRequestDTO;
 import com.delivery.dto.UsuarioResponseDTO;
+import com.delivery.mapper.UsuarioMapper;
 import com.delivery.model.Pessoa;
 import com.delivery.service.PessoaService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,10 +21,24 @@ public class UsuarioController {
     @Autowired
     private PessoaService pessoaService;
 
+    @Autowired
+    private UsuarioMapper usuarioMapper; // Adicionar o mapper
+
     @PostMapping("/registrar")
     public ResponseEntity<UsuarioResponseDTO> registrar(@RequestBody UsuarioRequestDTO usuarioDTO) {
         UsuarioResponseDTO novoUsuario = pessoaService.criarUsuario(usuarioDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(novoUsuario);
+    }
+
+    @GetMapping("/me")
+    @Operation(summary = "Busca os dados do usuário autenticado", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<UsuarioResponseDTO> buscarMeuCadastro() {
+        String email = getEmailUsuarioLogado();
+        Pessoa pessoaLogada = pessoaService.buscarProEmail(email);
+        if (pessoaLogada != null) {
+            return ResponseEntity.ok(usuarioMapper.toResponseDTO(pessoaLogada));
+        }
+        return ResponseEntity.notFound().build();
     }
 
     @PutMapping("/me")

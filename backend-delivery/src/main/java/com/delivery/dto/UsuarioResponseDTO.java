@@ -1,6 +1,7 @@
 package com.delivery.dto;
 
 import java.util.Date;
+import java.util.List;
 
 public class UsuarioResponseDTO {
     private Long codigo;
@@ -9,6 +10,7 @@ public class UsuarioResponseDTO {
     private Date dataNascimento;
     private String endereco;
     private String email;
+    private List<String> roles;
 
     // Getters and Setters
     public Long getCodigo() {
@@ -57,5 +59,13 @@ public class UsuarioResponseDTO {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public List<String> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(List<String> roles) {
+        this.roles = roles;
     }
 }

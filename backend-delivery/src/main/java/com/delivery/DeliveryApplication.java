@@ -49,6 +49,13 @@ public class DeliveryApplication {
                 roleRepository.save(restaurantRole);
             }
 
+            Role deliveryRole = roleRepository.findByPapel("DELIVERY");
+            if (deliveryRole == null) {
+                deliveryRole = new Role();
+                deliveryRole.setPapel("DELIVERY");
+                roleRepository.save(deliveryRole);
+            }
+
             // Criar usuário admin padrão se não existir
             if (pessoaRepository.findByEmail("admin@example.com") == null) {
                 Pessoa admin = new Pessoa();
@@ -67,6 +74,16 @@ public class DeliveryApplication {
                 user.setSenha(passwordEncoder.encode("user123"));
                 user.setRoles(Collections.singletonList(userRole));
                 pessoaRepository.save(user);
+            }
+
+            // Criar usuário entregador padrão se não existir
+            if (pessoaRepository.findByEmail("delivery@example.com") == null) {
+                Pessoa delivery = new Pessoa();
+                delivery.setNome("Delivery");
+                delivery.setEmail("delivery@example.com");
+                delivery.setSenha(passwordEncoder.encode("delivery123"));
+                delivery.setRoles(Collections.singletonList(deliveryRole));
+                pessoaRepository.save(delivery);
             }
 
             // Criar estabelecimento e usuário restaurante padrão
