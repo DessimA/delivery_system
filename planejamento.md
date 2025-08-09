@@ -1,171 +1,630 @@
-# Planejamento Detalhado do Sistema de Delivery de Lanches
+# 📋 Planejamento Detalhado - Sistema de Delivery
 
-## 1. Visão Geral do Projeto
-Este projeto implementa um sistema de delivery de lanches, composto por um backend em Spring Boot (Java) e um frontend em Vue.js. O sistema permite o gerenciamento de produtos (lanches), pedidos e usuários, com diferentes níveis de acesso baseados em roles (ADMIN e USER). O objetivo é fornecer uma plataforma completa para que clientes possam navegar, selecionar e pedir lanches, e para que administradores possam gerenciar o catálogo e os pedidos.
+## 🎯 Visão Geral do Projeto
 
-## 2. Modelos de Dados Essenciais (Implícitos/Explícitos)
+### Objetivo
+Desenvolver um sistema completo de delivery que conecte restaurantes/estabelecimentos, clientes e entregadores em uma plataforma integrada, oferecendo uma experiência fluida de compra e entrega.
 
-*   **Produto:** Representa um lanche ou item do cardápio.
-    *   `id`: Identificador único.
-    *   `nome`: Nome do lanche (ex: X-Bacon, Refrigerante).
-    *   `descricao`: Descrição detalhada do lanche (ingredientes, etc.).
-    *   `preco`: Preço unitário do lanche.
-    *   `imagemUrl`: URL para a imagem do lanche.
-    *   `categoria`: Categoria do lanche (ex: Lanches, Bebidas, Sobremesas, Porções).
-    *   `disponibilidade`: Booleano indicando se o lanche está disponível para venda.
+### Escopo
+Sistema web responsivo com arquitetura de microsserviços, composto por:
+- **Backend API RESTful** (Spring Boot + PostgreSQL)
+- **Frontend Web** (Vue.js + Bootstrap)
+- **Sistema de Autenticação** baseado em roles
+- **Gestão completa de pedidos** e entregas
+- **Interface administrativa** para gerenciamento
 
-*   **Usuário (Pessoa):** Representa um cliente ou administrador do sistema.
-    *   `id`: Identificador único.
-    *   `nome`: Nome completo do usuário.
-    *   `email`: Email do usuário (usado para login).
-    *   `senha`: Senha criptografada do usuário.
-    *   `enderecos`: Lista de endereços de entrega associados ao usuário.
-    *   `roles`: Lista de roles do usuário (ex: `ROLE_USER`, `ROLE_ADMIN`).
+---
 
-*   **Endereço:** Informações de um endereço de entrega.
-    *   `id`: Identificador único.
-    *   `rua`: Nome da rua.
-    *   `numero`: Número do imóvel.
-    *   `complemento`: Complemento (apto, bloco, etc.).
-    *   `bairro`: Bairro.
-    *   `cidade`: Cidade.
-    *   `estado`: Estado.
-    *   `cep`: Código de Endereçamento Postal.
+## 👥 Definição de Roles e Responsabilidades
 
-*   **Pedido:** Representa uma ordem de compra de lanches.
-    *   `id`: Identificador único.
-    *   `dataHora`: Data e hora em que o pedido foi realizado.
-    *   `status`: Status atual do pedido (ex: `PENDENTE`, `EM_PREPARACAO`, `EM_ENTREGA`, `ENTREGUE`, `CANCELADO`).
-    *   `total`: Valor total do pedido.
-    *   `itensPedido`: Lista de itens que compõem o pedido.
-    *   `enderecoEntrega`: Endereço para onde o pedido deve ser entregue.
-    *   `usuario`: O usuário que realizou o pedido.
+### 🔧 **ADMIN (Administrador)**
+**Responsabilidades:**
+- Gerenciamento completo do sistema
+- Supervisão de todas as operações
+- Controle de usuários e estabelecimentos
+- Análise de relatórios e métricas
 
-*   **ItemPedido:** Representa um produto dentro de um pedido.
-    *   `id`: Identificador único.
-    *   `produto`: O produto que foi pedido.
-    *   `quantidade`: Quantidade do produto pedido.
-    *   `precoUnitario`: Preço do produto no momento da compra (para histórico).
+**Permissões:**
+- ✅ Acesso total à API
+- ✅ CRUD completo de todos os recursos
+- ✅ Visualização de todos os pedidos
+- ✅ Gerenciamento de usuários e roles
+- ✅ Configurações do sistema
+- ✅ Relatórios e dashboards
 
-*   **Carrinho (Frontend - Modelo Lógico):** Representação temporária dos itens selecionados pelo usuário antes de finalizar o pedido. Geralmente armazenado no `localStorage` ou `sessionStorage` do navegador.
-    *   `itens`: Lista de objetos contendo `produtoId`, `quantidade`, `nome`, `preco`, `imagemUrl`.
-    *   `total`: Soma dos preços dos itens no carrinho.
+### 🛍️ **USER (Cliente)**
+**Responsabilidades:**
+- Realizar pedidos
+- Gerenciar perfil pessoal
+- Acompanhar histórico de pedidos
 
-## 3. Fluxos de Usuário Detalhados e Comportamento do Frontend
+**Permissões:**
+- ✅ Visualizar produtos disponíveis
+- ✅ Criar e gerenciar pedidos próprios
+- ✅ Atualizar dados pessoais
+- ✅ Visualizar histórico de pedidos próprios
+- ❌ Acesso a dados de outros usuários
+- ❌ Funções administrativas
 
-### 3.1. Usuário Não Autenticado (Visitante)
+### 🏪 **RESTAURANT (Estabelecimento)** *[Planejado]*
+**Responsabilidades:**
+- Gerenciar cardápio próprio
+- Processar pedidos recebidos
+- Controlar disponibilidade de produtos
+- Definir horários de funcionamento
 
-**Objetivo:** Navegar pelo cardápio, visualizar lanches e adicioná-los a um carrinho temporário.
+**Permissões:**
+- ✅ CRUD dos próprios produtos
+- ✅ Visualizar pedidos do estabelecimento
+- ✅ Atualizar status dos pedidos
+- ✅ Gerenciar horários e disponibilidade
+- ❌ Acesso a dados de outros estabelecimentos
 
-*   **Páginas Acessíveis:**
-    *   **Página Inicial (`/`):** Exibe uma visão geral do restaurante, promoções, ou lanches em destaque. Pode ter um carrossel de imagens ou seções de categorias.
-    *   **Página de Produtos (`/products`):**
-        *   Exibição em grade ou lista de todos os lanches disponíveis, com imagem, nome e preço.
-        *   **Funcionalidade de Busca:** Campo de texto para pesquisar lanches por nome.
-        *   **Funcionalidade de Filtro:** Opções para filtrar lanches por categoria (ex: Lanches, Bebidas, Sobremesas).
-        *   **Botão "Adicionar ao Carrinho":** Presente em cada item do produto. Ao clicar, o item é adicionado ao carrinho local (sem necessidade de login).
-        *   **Botão "Ver Detalhes":** Ao clicar em um produto, redireciona para a página de detalhes do produto.
-    *   **Página de Detalhes do Produto (`/products/:id`):** Exibe informações mais detalhadas do lanche, incluindo descrição completa, ingredientes (se aplicável), preço, imagem maior e um botão "Adicionar ao Carrinho" com seletor de quantidade.
-    *   **Página de Login (`/login`):** Formulário para que usuários existentes possam fazer login.
-    *   **Página de Registro (`/register`):** Formulário para que novos usuários possam criar uma conta.
-    *   **Carrinho de Compras (`/cart`):**
-        *   Acessível via ícone persistente na barra de navegação.
-        *   Exibe a lista de itens adicionados, suas quantidades e o subtotal.
-        *   Permite ajustar a quantidade de cada item ou remover itens do carrinho.
-        *   **Botão "Finalizar Pedido":** Ao ser clicado, se o usuário não estiver autenticado, exibe uma mensagem clara (ex: "Você precisa estar logado para finalizar o pedido") e redireciona para a página de login/registro.
+### 🚚 **DELIVERY (Entregador)** *[Planejado]*
+**Responsabilidades:**
+- Aceitar entregas disponíveis
+- Atualizar status das entregas
+- Reportar problemas na entrega
 
-*   **Elementos de UI Visíveis/Ocultos:**
-    *   **Navegação:** Links para "Home", "Cardápio" (ou "Produtos"), "Login", "Registrar", e um ícone de "Carrinho" com um contador de itens.
-    *   **Ocultos:** Links para "Meu Perfil", "Meus Pedidos", "Painel Administrativo" ou qualquer funcionalidade de gerenciamento.
+**Permissões:**
+- ✅ Visualizar pedidos disponíveis para entrega
+- ✅ Aceitar/recusar entregas
+- ✅ Atualizar status de entrega
+- ✅ Reportar ocorrências
+- ❌ Acesso a dados de pagamento
 
-*   **Interações:**
-    *   Pode navegar livremente pelo cardápio e visualizar detalhes dos lanches.
-    *   Pode adicionar lanches ao carrinho (armazenado localmente no navegador).
-    *   Não pode persistir o carrinho entre sessões ou finalizar um pedido sem antes se autenticar.
+---
 
-### 3.2. Usuário Autenticado (Role: USER - Cliente)
+## 🖥️ Detalhamento das Telas por Usuário
 
-**Objetivo:** Gerenciar perfil, fazer pedidos, acompanhar o status e visualizar histórico.
+### 📱 **Telas do ADMIN**
 
-*   **Páginas Acessíveis:**
-    *   Todas as páginas acessíveis ao visitante.
-    *   **Página de Perfil (`/profile` ou `/me`):** Exibe informações do usuário (nome, email). Permite editar dados pessoais e gerenciar múltiplos endereços de entrega (adicionar, editar, remover, definir como padrão).
-    *   **Página de Meus Pedidos (`/my-orders`):** Lista todos os pedidos feitos pelo usuário, com informações resumidas (ID, data, total, status). Ao clicar em um pedido, exibe uma página de detalhes do pedido com todos os itens, endereço de entrega e histórico de status.
-    *   **Página de Checkout (`/checkout`):**
-        *   Exibe um resumo detalhado do carrinho.
-        *   Permite selecionar um endereço de entrega existente ou adicionar um novo endereço.
-        *   Seleção de método de pagamento (ex: Cartão de Crédito, Dinheiro na Entrega, Pix - inicialmente pode ser um placeholder).
-        *   **Botão "Confirmar Pedido":** Envia o pedido para o backend e redireciona para uma página de confirmação ou para a lista de "Meus Pedidos".
+#### 1. **Dashboard Principal**
+- **Descrição:** Painel centralizado com métricas e indicadores
+- **Funcionalidades:**
+  - Resumo de pedidos (hoje, semana, mês)
+  - Gráficos de vendas e performance
+  - Alertas e notificações importantes
+  - Ações rápidas (novos usuários, pedidos pendentes)
+- **Componentes:** Cards de métricas, gráficos, tabelas resumo
+- **Estado:** 🔄 Planejado
 
-*   **Elementos de UI Visíveis/Ocultos:**
-    *   **Navegação:** Links para "Home", "Cardápio", "Meu Perfil", "Meus Pedidos", "Carrinho", e um botão "Sair" (Logout).
-    *   **Ocultos:** Links para "Login", "Registrar", "Painel Administrativo".
+#### 2. **Gerenciamento de Usuários**
+- **Descrição:** CRUD completo de todos os usuários do sistema
+- **Funcionalidades:**
+  - Listar todos os usuários com filtros
+  - Criar/editar/desativar usuários
+  - Alterar roles e permissões
+  - Visualizar histórico de atividades
+- **Componentes:** Tabela paginada, modais de edição, filtros
+- **Estado:** 🔄 Planejado
 
-*   **Interações:**
-    *   Pode realizar todas as ações do usuário não autenticado.
-    *   Pode gerenciar suas informações de perfil e endereços de entrega.
-    *   Pode finalizar pedidos, utilizando seus endereços cadastrados e selecionando um método de pagamento.
-    *   Pode visualizar o histórico completo de seus pedidos e acompanhar o status atual de cada um.
-    *   Não tem acesso a funcionalidades de gerenciamento de produtos ou visualização de todos os pedidos do sistema.
+#### 3. **Gerenciamento de Produtos**
+- **Descrição:** Controle global do catálogo de produtos
+- **Funcionalidades:**
+  - Visualizar produtos de todos os estabelecimentos
+  - Aprovar/reprovar produtos
+  - Moderar descrições e imagens
+  - Configurar categorias globais
+- **Componentes:** Grid de produtos, formulários, upload de imagens
+- **Estado:** ✅ Implementado (básico)
 
-### 3.3. Usuário Autenticado (Role: ADMIN)
+#### 4. **Gerenciamento de Pedidos**
+- **Descrição:** Monitoramento e controle de todos os pedidos
+- **Funcionalidades:**
+  - Visualizar todos os pedidos do sistema
+  - Filtrar por status, data, estabelecimento
+  - Intervir em casos de problema
+  - Gerar relatórios detalhados
+- **Componentes:** Tabela avançada, filtros, modais de detalhes
+- **Estado:** ✅ Implementado (básico)
 
-**Objetivo:** Gerenciar o catálogo de lanches e todos os pedidos do sistema.
+#### 5. **Relatórios e Análises**
+- **Descrição:** Geração de relatórios e análises de negócio
+- **Funcionalidades:**
+  - Relatórios de vendas por período
+  - Performance de estabelecimentos
+  - Análise de produtos mais vendidos
+  - Exportação de dados (PDF, Excel)
+- **Componentes:** Formulários de filtro, gráficos, botões de export
+- **Estado:** 🔄 Planejado
 
-*   **Páginas Acessíveis:**
-    *   Todas as páginas acessíveis por um usuário comum.
-    *   **Painel Administrativo (`/admin` ou `/dashboard`):** Uma página central que serve como ponto de partida para as funcionalidades de gerenciamento, com links claros para "Gerenciar Produtos" e "Gerenciar Pedidos".
-    *   **Gerenciamento de Produtos (`/admin/products`):**
-        *   Lista todos os produtos do cardápio em uma tabela ou grade, com opções de "Editar" e "Excluir" para cada item.
-        *   **Botão "Adicionar Novo Produto":** Leva a um formulário dedicado para cadastro de um novo lanche.
-        *   **Formulário de Adição/Edição de Produto:** Campos para `nome`, `descricao`, `preco`, `categoria`, `disponibilidade` e um campo para `upload de imagem` (ou URL da imagem).
-    *   **Gerenciamento de Pedidos (`/admin/orders`):**
-        *   Lista *todos* os pedidos realizados no sistema (não apenas os seus), com informações resumidas (ID, cliente, data, total, status).
-        *   **Filtros:** Opções para filtrar pedidos por status (ex: Pendente, Em Preparação), por cliente, ou por período.
-        *   Ao clicar em um pedido, exibe uma página de detalhes completa, similar à do cliente, mas com a funcionalidade adicional de **atualizar o status do pedido** (ex: de "Pendente" para "Em Preparação", "Em Entrega", "Entregue").
+### 🛒 **Telas do USER (Cliente)**
 
-*   **Elementos de UI Visíveis/Ocultos:**
-    *   **Navegação:** Links para "Home", "Cardápio", "Meu Perfil", "Meus Pedidos", "Carrinho", "Painel Administrativo", e um botão "Sair" (Logout).
-    *   **Ocultos:** Links para "Login", "Registrar".
+#### 1. **Página Inicial/Catálogo**
+- **Descrição:** Listagem de produtos disponíveis para pedido
+- **Funcionalidades:**
+  - Visualizar produtos com imagens e preços
+  - Filtrar por categoria, preço, estabelecimento
+  - Pesquisar produtos específicos
+  - Adicionar produtos ao carrinho
+- **Componentes:** Grid de produtos, filtros, barra de pesquisa
+- **Estado:** ✅ Implementado
 
-*   **Interações:**
-    *   Pode realizar todas as ações de um usuário comum.
-    *   Pode criar, editar e excluir lanches do cardápio.
-    *   Pode visualizar e gerenciar o status de *todos* os pedidos do sistema, acompanhando o fluxo de entrega.
-    *   Pode ter acesso a outras ferramentas de administração (se implementadas no futuro, como gerenciamento de categorias, promoções, relatórios de vendas, etc.).
+#### 2. **Carrinho de Compras**
+- **Descrição:** Gerenciamento dos itens selecionados
+- **Funcionalidades:**
+  - Visualizar itens no carrinho
+  - Alterar quantidades
+  - Remover itens
+  - Calcular total com taxas
+  - Finalizar pedido
+- **Componentes:** Lista de itens, controles de quantidade, resumo
+- **Estado:** ✅ Implementado
 
-## 4. Considerações de UI/UX e Componentes Chave
+#### 3. **Finalização de Pedido**
+- **Descrição:** Processo de checkout e confirmação
+- **Funcionalidades:**
+  - Confirmar endereço de entrega
+  - Selecionar forma de pagamento
+  - Adicionar observações
+  - Confirmar pedido final
+- **Componentes:** Formulários, resumo do pedido, botões de ação
+- **Estado:** ✅ Implementado (básico)
 
-*   **Barra de Navegação (AppNavbar.vue):**
-    *   Responsiva e adaptável, exibindo links dinamicamente com base no status de autenticação e na role do usuário.
-    *   Ícone de carrinho com um contador numérico de itens.
-    *   Exibição do nome do usuário logado e uma opção clara de "Sair" (Logout).
-*   **Listagem de Produtos (AppProducts.vue):**
-    *   Layout visualmente atraente e responsivo para exibir os lanches (cards, grade).
-    *   Botões "Adicionar ao Carrinho" claramente visíveis e interativos para todos os usuários.
-    *   Para `ADMINs`, botões "Editar" e "Excluir" devem ser visíveis em cada item do produto, ou acessíveis através de um painel de gerenciamento.
-*   **Formulários:**
-    *   Todos os formulários (login, registro, perfil, produto) devem ter validação de entrada robusta e feedback claro ao usuário.
-    *   Design intuitivo e fácil de usar.
-*   **Feedback ao Usuário:**
-    *   Mensagens de sucesso (ex: "Lanche adicionado ao carrinho!", "Pedido realizado com sucesso!").
-    *   Mensagens de erro (ex: "Login falhou. Verifique suas credenciais.", "Erro ao processar o pedido.").
-    *   Indicadores de carregamento para operações assíncronas.
-*   **Estado Global (Vuex/Pinia):**
-    *   Utilização de um gerenciador de estado para manter informações cruciais como o status de autenticação, dados do usuário logado (incluindo roles), e os itens do carrinho de compras.
-    *   Isso garante que os dados estejam sincronizados entre os componentes e as rotas.
+#### 4. **Histórico de Pedidos**
+- **Descrição:** Visualização de pedidos anteriores
+- **Funcionalidades:**
+  - Listar pedidos realizados
+  - Filtrar por status e data
+  - Visualizar detalhes de cada pedido
+  - Repetir pedidos anteriores
+- **Componentes:** Lista/cards de pedidos, filtros, detalhes
+- **Estado:** ✅ Implementado
 
-## 5. Próximos Passos (Implícitos para o Desenvolvimento)
+#### 5. **Perfil do Usuário**
+- **Descrição:** Gerenciamento de dados pessoais
+- **Funcionalidades:**
+  - Editar informações pessoais
+  - Gerenciar endereços
+  - Alterar senha
+  - Configurar preferências
+- **Componentes:** Formulários de edição, validações
+- **Estado:** ✅ Implementado (básico)
 
-*   **Backend:**
-    *   Implementação completa dos endpoints de gerenciamento de produtos (CRUD) com upload de imagem.
-    *   Implementação dos endpoints de gerenciamento de pedidos (visualização de todos, atualização de status).
-    *   Refinamento da autenticação e autorização para garantir que as roles sejam corretamente aplicadas em todos os endpoints.
-    *   Implementação de um endpoint para o frontend obter os dados do usuário logado, incluindo suas roles.
-*   **Frontend:**
-    *   Desenvolvimento completo do fluxo de carrinho de compras (adição, remoção, atualização de quantidade, persistência local e sincronização com o backend no checkout).
-    *   Criação da página de Checkout, incluindo seleção de endereço e método de pagamento.
-    *   Desenvolvimento das páginas/componentes de gerenciamento de produtos para o `ADMIN` (listagem, formulário de adição/edição).
-    *   Desenvolvimento das páginas/componentes de gerenciamento de pedidos para o `ADMIN` (listagem de todos os pedidos, detalhes do pedido com atualização de status).
-    *   Implementação da lógica de renderização condicional de elementos da UI com base na role do usuário (ex: exibir/ocultar links de administração).
-    *   Integração com as APIs do backend para todas as funcionalidades.
+#### 6. **Acompanhamento de Pedido** *[Planejado]*
+- **Descrição:** Tracking em tempo real do pedido
+- **Funcionalidades:**
+  - Status atual do pedido
+  - Tempo estimado de entrega
+  - Localização do entregador (se aplicável)
+  - Notificações de mudança de status
+- **Componentes:** Timeline de status, mapa, notificações
+- **Estado:** 🔄 Planejado
+
+### 🏪 **Telas do RESTAURANT** *[Planejadas]*
+
+#### 1. **Dashboard do Estabelecimento**
+- **Descrição:** Painel de controle do restaurante
+- **Funcionalidades:**
+  - Resumo de vendas do dia
+  - Pedidos pendentes e em preparo
+  - Performance de produtos
+  - Alertas importantes
+- **Estado:** 🔄 Planejado
+
+#### 2. **Gerenciamento de Cardápio**
+- **Descrição:** CRUD do menu do estabelecimento
+- **Funcionalidades:**
+  - Adicionar/editar/remover produtos
+  - Upload de imagens dos pratos
+  - Definir preços e promoções
+  - Controlar disponibilidade
+- **Estado:** 🔄 Planejado
+
+#### 3. **Gestão de Pedidos**
+- **Descrição:** Processamento de pedidos recebidos
+- **Funcionalidades:**
+  - Visualizar novos pedidos
+  - Aceitar/recusar pedidos
+  - Atualizar status de preparo
+  - Definir tempo de preparo
+- **Estado:** 🔄 Planejado
+
+### 🚚 **Telas do DELIVERY** *[Planejadas]*
+
+#### 1. **Entregas Disponíveis**
+- **Descrição:** Lista de pedidos disponíveis para entrega
+- **Funcionalidades:**
+  - Visualizar pedidos prontos
+  - Ver detalhes da entrega (endereço, valor)
+  - Aceitar entregas
+  - Filtrar por proximidade
+- **Estado:** 🔄 Planejado
+
+#### 2. **Entrega em Andamento**
+- **Descrição:** Controle da entrega atual
+- **Funcionalidades:**
+  - Detalhes do pedido e cliente
+  - Navegação para o endereço
+  - Atualizar status da entrega
+  - Reportar problemas
+- **Estado:** 🔄 Planejado
+
+---
+
+## 🛠️ Arquitetura Técnica Detalhada
+
+### **Backend (Spring Boot)**
+
+#### Estrutura de Camadas
+```
+backend-delivery/
+├── config/              # Configurações (Security, CORS, etc.)
+├── controller/          # Endpoints REST
+│   ├── ProdutoController
+│   ├── UsuarioController
+│   ├── PedidoController
+│   └── AdminController (planejado)
+├── dto/                 # Data Transfer Objects
+│   ├── request/         # DTOs de entrada
+│   └── response/        # DTOs de saída
+├── mapper/              # Conversores Entity <-> DTO
+├── model/               # Entidades JPA
+├── repository/          # Interfaces Spring Data
+├── security/            # Implementações de segurança
+└── service/             # Lógica de negócio
+```
+
+#### Endpoints Principais
+
+##### **Produtos**
+- `GET /api/produtos` - Listar produtos (público)
+- `POST /api/produtos` - Criar produto (ADMIN/RESTAURANT)
+- `PUT /api/produtos/{id}` - Atualizar produto (ADMIN/RESTAURANT)
+- `DELETE /api/produtos/{id}` - Remover produto (ADMIN)
+
+##### **Usuários**
+- `POST /api/usuarios/registro` - Registrar usuário
+- `GET /api/usuarios/perfil` - Obter perfil atual
+- `PUT /api/usuarios/perfil` - Atualizar perfil
+- `GET /api/admin/usuarios` - Listar usuários (ADMIN)
+
+##### **Pedidos**
+- `POST /api/pedidos` - Criar pedido (USER)
+- `GET /api/pedidos/meus` - Histórico pessoal (USER)
+- `GET /api/pedidos` - Todos os pedidos (ADMIN)
+- `PUT /api/pedidos/{id}/status` - Atualizar status (ADMIN/RESTAURANT)
+
+#### Melhorias Planejadas
+- ✅ Implementar WebSockets para notificações em tempo real
+- ✅ Adicionar sistema de cache (Redis)
+- ✅ Implementar rate limiting
+- ✅ Adicionar logs estruturados
+- ✅ Implementar testes automatizados (JUnit + MockMVC)
+
+### **Frontend (Vue.js)**
+
+#### Estrutura de Componentes
+```
+frontend-delivery/
+├── public/              # Arquivos estáticos
+├── src/
+│   ├── api/            # Configuração Axios
+│   ├── assets/         # Imagens, CSS
+│   ├── components/     # Componentes reutilizáveis
+│   │   ├── common/     # Componentes gerais
+│   │   ├── admin/      # Componentes administrativos
+│   │   └── user/       # Componentes do cliente
+│   ├── router/         # Configuração de rotas
+│   ├── store/          # Vuex/Pinia (estado global)
+│   ├── views/          # Páginas principais
+│   └── utils/          # Utilitários e helpers
+```
+
+#### Melhorias Planejadas
+- ✅ Implementar estado global (Pinia)
+- ✅ Adicionar PWA (Progressive Web App)
+- ✅ Implementar lazy loading de rotas
+- ✅ Adicionar testes unitários (Vitest)
+- ✅ Melhorar acessibilidade (a11y)
+
+### **Banco de Dados**
+
+#### Modelo Atual
+- **Pessoa** (usuários)
+- **Role** (papéis/permissões)
+- **Produto** (itens do cardápio)
+- **Pedido** (orders)
+
+#### Extensões Planejadas
+```sql
+-- Tabelas adicionais planejadas
+CREATE TABLE Estabelecimento (
+    id BIGSERIAL PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    cnpj VARCHAR(14) UNIQUE,
+    endereco TEXT,
+    telefone VARCHAR(20),
+    horario_funcionamento JSONB,
+    ativo BOOLEAN DEFAULT TRUE,
+    usuario_id BIGINT REFERENCES Pessoa(codigo)
+);
+
+CREATE TABLE Categoria (
+    id BIGSERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    descricao TEXT,
+    ativo BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE Entrega (
+    id BIGSERIAL PRIMARY KEY,
+    pedido_id BIGINT REFERENCES Pedido(codigoPedido),
+    entregador_id BIGINT REFERENCES Pessoa(codigo),
+    endereco_origem TEXT,
+    endereco_destino TEXT,
+    status VARCHAR(50),
+    tempo_estimado INTEGER, -- em minutos
+    valor_entrega DECIMAL(10,2),
+    criado_em TIMESTAMP DEFAULT NOW(),
+    entregue_em TIMESTAMP
+);
+
+CREATE TABLE Avaliacao (
+    id BIGSERIAL PRIMARY KEY,
+    pedido_id BIGINT REFERENCES Pedido(codigoPedido),
+    cliente_id BIGINT REFERENCES Pessoa(codigo),
+    nota INTEGER CHECK (nota >= 1 AND nota <= 5),
+    comentario TEXT,
+    criado_em TIMESTAMP DEFAULT NOW()
+);
+```
+
+---
+
+## 📋 Funcionalidades Detalhadas
+
+### ✅ **Implementadas**
+
+#### Sistema de Autenticação
+- Login/logout com HTTP Basic
+- Registro de novos usuários
+- Controle de acesso baseado em roles
+- Usuários padrão (admin/user) criados automaticamente
+
+#### Gestão de Produtos
+- CRUD completo de produtos
+- Upload de imagens
+- Listagem pública para clientes
+- Controle de acesso para modificações
+
+#### Gestão de Pedidos
+- Criação de pedidos com múltiplos produtos
+- Histórico personalizado por usuário
+- Visualização administrativa de todos os pedidos
+- Cálculo automático de valores
+
+#### Interface do Cliente
+- Catálogo de produtos responsivo
+- Carrinho de compras funcional
+- Processo de checkout
+- Histórico de pedidos
+
+### 🔄 **Em Desenvolvimento/Planejadas**
+
+#### Sistema de Estabelecimentos
+- **Prioridade:** Alta
+- **Descrição:** Permitir que estabelecimentos gerenciem seus próprios cardápios
+- **Funcionalidades:**
+  - Registro de restaurantes/estabelecimentos
+  - Dashboard específico para cada estabelecimento
+  - Gestão independente de produtos
+  - Controle de horário de funcionamento
+  - Sistema de aprovação de novos estabelecimentos
+
+#### Sistema de Entregas
+- **Prioridade:** Alta
+- **Descrição:** Gerenciamento completo do processo de entrega
+- **Funcionalidades:**
+  - Cadastro de entregadores
+  - Sistema de distribuição de entregas
+  - Tracking em tempo real
+  - Cálculo automático de taxas de entrega
+  - Integração com APIs de geolocalização
+
+#### Sistema de Notificações
+- **Prioridade:** Média
+- **Descrição:** Notificações em tempo real para todos os usuários
+- **Funcionalidades:**
+  - WebSockets para comunicação em tempo real
+  - Notificações push (PWA)
+  - Email notifications
+  - SMS notifications (integração externa)
+
+#### Sistema de Pagamento
+- **Prioridade:** Alta
+- **Descrição:** Integração com gateways de pagamento
+- **Funcionalidades:**
+  - Múltiplas formas de pagamento
+  - Integração com Stripe/PayPal/PagSeguro
+  - Controle de transações
+  - Sistema de reembolsos
+  - Relatórios financeiros
+
+#### Sistema de Avaliações
+- **Prioridade:** Média
+- **Descrição:** Feedback de clientes sobre pedidos e estabelecimentos
+- **Funcionalidades:**
+  - Avaliação de pedidos (1-5 estrelas)
+  - Comentários e reviews
+  - Sistema de moderação
+  - Ranking de estabelecimentos
+  - Métricas de satisfação
+
+#### Dashboard Analytics
+- **Prioridade:** Baixa
+- **Descrição:** Painéis avançados com métricas e KPIs
+- **Funcionalidades:**
+  - Gráficos interativos (Chart.js/D3.js)
+  - Métricas de vendas e performance
+  - Relatórios automatizados
+  - Exportação de dados
+  - Alertas baseados em thresholds
+
+---
+
+## 📅 Cronograma de Desenvolvimento
+
+### **Fase 1: Melhorias da Base (1-2 meses)**
+- [ ] Implementar testes automatizados (backend e frontend)
+- [ ] Melhorar validações e tratamento de erros
+- [ ] Adicionar logs estruturados
+- [ ] Implementar cache (Redis)
+- [ ] Melhorar documentação da API
+
+### **Fase 2: Sistema de Estabelecimentos (2-3 meses)**
+- [ ] Criar modelo de dados para estabelecimentos
+- [ ] Implementar role RESTAURANT
+- [ ] Desenvolver dashboard do estabelecimento
+- [ ] Implementar gestão de cardápio por estabelecimento
+- [ ] Criar processo de aprovação de estabelecimentos
+
+### **Fase 3: Sistema de Entregas (2-3 meses)**
+- [ ] Implementar role DELIVERY
+- [ ] Criar sistema de distribuição de entregas
+- [ ] Desenvolver tracking em tempo real
+- [ ] Integrar APIs de geolocalização
+- [ ] Implementar cálculo de taxas de entrega
+
+### **Fase 4: Sistema de Pagamentos (1-2 meses)**
+- [ ] Integrar gateway de pagamento
+- [ ] Implementar múltiplas formas de pagamento
+- [ ] Criar sistema de controle de transações
+- [ ] Desenvolver relatórios financeiros
+
+### **Fase 5: Funcionalidades Avançadas (2-3 meses)**
+- [ ] Sistema de notificações em tempo real
+- [ ] Sistema de avaliações e reviews
+- [ ] Dashboard analytics avançado
+- [ ] PWA com notificações push
+- [ ] Sistema de promoções e cupons
+
+### **Fase 6: Otimizações e Lançamento (1 mês)**
+- [ ] Testes de carga e performance
+- [ ] Implementar CI/CD completo
+- [ ] Configurar monitoramento (APM)
+- [ ] Deploy em produção
+- [ ] Documentação para usuários finais
+
+---
+
+## 🔧 Configuração de Desenvolvimento
+
+### Pré-requisitos
+- Java 22+
+- Node.js 18+
+- Docker & Docker Compose
+- PostgreSQL (via Docker)
+- Maven 3.9+
+
+### Executar Localmente
+
+#### Via Docker (Recomendado)
+```bash
+# Clone o repositório
+git clone https://github.com/DessimA/delivery_system.git
+cd delivery_system
+
+# Switch para branch dev
+git checkout dev
+
+# Construir e executar
+docker-compose build --no-cache
+docker-compose up
+
+# Acessar
+# Frontend: http://localhost/
+# Backend API: http://localhost:8080
+# Swagger UI: http://localhost:8080/swagger-ui.html
+```
+
+#### Desenvolvimento Local
+```bash
+# Backend
+cd backend-delivery
+./mvnw spring-boot:run
+
+# Frontend (em outro terminal)
+cd frontend-delivery
+npm install
+npm run serve
+```
+
+### Usuários Padrão
+- **Admin:** admin@example.com / admin123
+- **Cliente:** user@example.com / user123
+
+---
+
+## 📊 Métricas e KPIs
+
+### Métricas de Negócio
+- Número de pedidos por período
+- Valor médio dos pedidos
+- Taxa de conversão (visitantes → pedidos)
+- Tempo médio de entrega
+- Satisfação do cliente (NPS)
+
+### Métricas Técnicas
+- Uptime da aplicação (>99.5%)
+- Tempo de resposta da API (<200ms)
+- Taxa de erro (<1%)
+- Cobertura de testes (>80%)
+- Performance do frontend (Lighthouse >90)
+
+---
+
+## 🚀 Próximos Passos Imediatos
+
+### Alta Prioridade
+1. **Implementar testes automatizados** - Garantir qualidade do código
+2. **Sistema de estabelecimentos** - Permitir múltiplos restaurantes
+3. **Melhorar UX/UI** - Interface mais intuitiva e atrativa
+4. **Sistema de pagamentos** - Integração com gateway real
+
+### Média Prioridade
+5. **Sistema de entregas** - Gestão completa de delivery
+6. **Notificações em tempo real** - Melhor comunicação
+7. **Sistema de avaliações** - Feedback dos clientes
+8. **PWA e mobile responsivo** - Experiência mobile
+
+### Baixa Prioridade
+9. **Dashboard analytics** - Métricas avançadas
+10. **Sistema de promoções** - Marketing e vendas
+11. **Multi-idioma** - Internacionalização
+12. **App mobile nativo** - iOS/Android
+
+---
+
+## 📝 Considerações Importantes
+
+### Segurança
+- Implementar autenticação JWT (substituir HTTP Basic)
+- Validação rigorosa de inputs
+- Rate limiting para APIs
+- HTTPS em produção
+- Criptografia de dados sensíveis
+
+### Performance
+- Implementar paginação em todas as listagens
+- Cache para dados frequentemente acessados
+- Otimização de imagens
+- CDN para assets estáticos
+- Database indexing
+
+### Escalabilidade
+- Arquitetura de microsserviços
+- Load balancing
+- Database sharding (se necessário)
+- Message queue para processamento assíncrono
+
+### Monitoramento
+- APM (Application Performance Monitoring)
+- Logs centralizados
+- Alertas automáticos
+- Métricas de negócio em tempo real
+
+---
+
+Este planejamento serve como guia para o desenvolvimento contínuo do sistema, devendo ser atualizado conforme o projeto evolui e novos requisitos surgem.
