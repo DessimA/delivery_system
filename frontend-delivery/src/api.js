@@ -11,7 +11,7 @@ api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('authToken'); // Ou sessionStorage
     if (token) {
-      config.headers.Authorization = `Basic ${token}`;
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },

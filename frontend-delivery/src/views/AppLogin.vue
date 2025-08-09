@@ -25,7 +25,7 @@
 </template>
 
 <script>
-// import api from '@/api'; // Removido, pois não é usado diretamente aqui para o login HTTP Basic
+import api from '@/api';
 
 export default {
   name: 'AppLogin',
@@ -40,19 +40,26 @@ export default {
     async login() {
       try {
         this.error = null;
-        const credentials = btoa(`${this.email}:${this.password}`); // Codifica para Base64
-        
-        // A API Spring Security com HTTP Basic espera o cabeçalho Authorization
-        // Para este exemplo, vamos apenas armazenar as credenciais codificadas como o "token"
-        // e o interceptor do axios irá usá-las.
-        localStorage.setItem('authToken', credentials);
-        
-        // Dispara um evento para que o Navbar possa reagir à mudança de status de login
-        window.dispatchEvent(new Event('storage'));
+        const response = await api.post('/auth/login', {
+          email: this.email,
+          senha: this.password, // O backend espera 'senha'
+        });
 
-        this.$router.push('/products'); // Redireciona para a página de produtos após o login
+        const token = response.data.accessToken;
+        if (token) {
+          localStorage.setItem('authToken', token);
+          
+          // Dispara um evento para que o Navbar possa reagir à mudança de status de login
+          window.dispatchEvent(new Event('storage'));
+
+          this.$router.push('/products'); // Redireciona para a página de produtos após o login
+        } else {
+            this.error = 'Token não recebido do servidor.';
+        }
+
       } catch (err) {
         this.error = 'Erro ao fazer login. Verifique suas credenciais.';
+        localStorage.removeItem('authToken');
         console.error('Erro de login:', err);
       }
     },

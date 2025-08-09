@@ -46,6 +46,9 @@ public class Pessoa implements UserDetails {
     )
     private List<Role> roles;
 
+    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL)
+    private Estabelecimento estabelecimento;
+
     // Getters and Setters
 
     public Long getCodigo() {
@@ -110,6 +113,14 @@ public class Pessoa implements UserDetails {
 
     public void setRoles(List<Role> roles) {
         this.roles = roles;
+    }
+
+    public Estabelecimento getEstabelecimento() {
+        return estabelecimento;
+    }
+
+    public void setEstabelecimento(Estabelecimento estabelecimento) {
+        this.estabelecimento = estabelecimento;
     }
 
     // UserDetails implementation

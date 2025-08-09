@@ -3,7 +3,10 @@ package com.delivery.model;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -24,6 +27,10 @@ public class Produto {
     private float preco;
 
     private String caminhoImagem;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "estabelecimento_id")
+    private Estabelecimento estabelecimento;
 
     // Getters and Setters
 
@@ -65,5 +72,13 @@ public class Produto {
 
     public void setCaminhoImagem(String caminhoImagem) {
         this.caminhoImagem = caminhoImagem;
+    }
+
+    public Estabelecimento getEstabelecimento() {
+        return estabelecimento;
+    }
+
+    public void setEstabelecimento(Estabelecimento estabelecimento) {
+        this.estabelecimento = estabelecimento;
     }
 }

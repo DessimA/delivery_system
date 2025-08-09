@@ -3,10 +3,15 @@ package com.delivery.service;
 import com.delivery.dto.ProdutoRequestDTO;
 import com.delivery.dto.ProdutoResponseDTO;
 import com.delivery.mapper.ProdutoMapper;
+import com.delivery.model.Estabelecimento;
+import com.delivery.model.Pessoa;
 import com.delivery.model.Produto;
+import com.delivery.repository.PessoaRepository;
 import com.delivery.repository.ProdutoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -23,6 +28,9 @@ public class ProdutoService {
 
     @Autowired
     private ProdutoRepository produtoRepository;
+
+    @Autowired
+    private PessoaRepository pessoaRepository; // Adicionado para buscar o usuário
 
     @Autowired
     private ProdutoMapper produtoMapper;
@@ -44,6 +52,24 @@ public class ProdutoService {
 
     public ProdutoResponseDTO criarProduto(ProdutoRequestDTO produtoDTO, MultipartFile imagem) {
         Produto produto = produtoMapper.toEntity(produtoDTO);
+
+        // Associa o produto ao estabelecimento do usuário logado
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String userEmail;
+        if (principal instanceof UserDetails) {
+            userEmail = ((UserDetails)principal).getUsername();
+        } else {
+            userEmail = principal.toString();
+        }
+
+        Pessoa pessoa = pessoaRepository.findByEmail(userEmail);
+        if (pessoa != null && pessoa.getEstabelecimento() != null) {
+            produto.setEstabelecimento(pessoa.getEstabelecimento());
+        } else {
+            // Lançar exceção ou tratar o caso de usuário sem estabelecimento
+            throw new IllegalStateException("Usuário não tem um estabelecimento associado ou não foi encontrado.");
+        }
+
         if (imagem != null && !imagem.isEmpty()) {
             String nomeArquivo = salvarImagem(imagem);
             produto.setCaminhoImagem(nomeArquivo);
@@ -53,7 +79,11 @@ public class ProdutoService {
     }
 
     public ProdutoResponseDTO atualizarProduto(Long id, ProdutoRequestDTO produtoDTO) {
+        Pessoa pessoa = getAuthenticatedUser();
         return produtoRepository.findById(id).map(produtoExistente -> {
+            if (!produtoPertenceAoUsuario(produtoExistente, pessoa)) {
+                throw new SecurityException("Usuário não autorizado a modificar este produto.");
+            }
             produtoExistente.setNomeProduto(produtoDTO.getNomeProduto());
             produtoExistente.setDescricao(produtoDTO.getDescricao());
             produtoExistente.setPreco(produtoDTO.getPreco());
@@ -63,7 +93,40 @@ public class ProdutoService {
     }
 
     public void excluir(Long id) {
-        produtoRepository.deleteById(id);
+        Pessoa pessoa = getAuthenticatedUser();
+        produtoRepository.findById(id).ifPresent(produto -> {
+            if (!produtoPertenceAoUsuario(produto, pessoa)) {
+                throw new SecurityException("Usuário não autorizado a excluir este produto.");
+            }
+            produtoRepository.delete(produto);
+        });
+    }
+
+    private Pessoa getAuthenticatedUser() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String userEmail;
+        if (principal instanceof UserDetails) {
+            userEmail = ((UserDetails)principal).getUsername();
+        } else {
+            userEmail = principal.toString();
+        }
+        Pessoa pessoa = pessoaRepository.findByEmail(userEmail);
+        if (pessoa == null) {
+            throw new IllegalStateException("Usuário autenticado não encontrado no banco de dados.");
+        }
+        return pessoa;
+    }
+
+    private boolean produtoPertenceAoUsuario(Produto produto, Pessoa pessoa) {
+        // ADMIN pode modificar qualquer produto
+        if (pessoa.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
+            return true;
+        }
+        // Usuário RESTAURANT só pode modificar produtos do seu estabelecimento
+        if (pessoa.getEstabelecimento() != null && produto.getEstabelecimento() != null) {
+            return produto.getEstabelecimento().getId().equals(pessoa.getEstabelecimento().getId());
+        }
+        return false;
     }
 
     private String salvarImagem(MultipartFile imagem) {
