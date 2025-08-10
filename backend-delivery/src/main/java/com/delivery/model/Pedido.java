@@ -27,6 +27,9 @@ public class Pedido {
     @OneToOne(mappedBy = "pedido", cascade = CascadeType.ALL)
     private Entrega entrega;
 
+    @OneToOne(mappedBy = "pedido", cascade = CascadeType.ALL)
+    private Pagamento pagamento;
+
     // Getters and Setters
 
     public Long getCodigoPedido() {
@@ -75,5 +78,13 @@ public class Pedido {
 
     public void setEntrega(Entrega entrega) {
         this.entrega = entrega;
+    }
+
+    public Pagamento getPagamento() {
+        return pagamento;
+    }
+
+    public void setPagamento(Pagamento pagamento) {
+        this.pagamento = pagamento;
     }
 }

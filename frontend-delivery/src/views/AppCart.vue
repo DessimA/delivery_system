@@ -11,9 +11,30 @@
       </ul>
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h4>Total: R$ {{ cartTotal.toFixed(2) }}</h4>
-        <button @click="checkout" class="btn btn-success" :disabled="!isLoggedIn">Finalizar Pedido</button>
       </div>
-      <div v-if="!isLoggedIn" class="alert alert-warning">Faça login para finalizar seu pedido.</div>
+
+      <div class="card mb-4">
+        <div class="card-header">Informações de Pagamento</div>
+        <div class="card-body">
+          <form @submit.prevent="processPayment">
+            <div class="mb-3">
+              <label for="metodoPagamento" class="form-label">Método de Pagamento</label>
+              <select class="form-select" id="metodoPagamento" v-model="paymentMethod" required>
+                <option value="CREDIT_CARD">Cartão de Crédito</option>
+                <option value="DEBIT_CARD">Cartão de Débito</option>
+                <option value="PIX">PIX</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="numeroCartao" class="form-label">Número do Cartão (apenas simulação)</label>
+              <input type="text" class="form-control" id="numeroCartao" v-model="cardNumber" placeholder="Apenas simulação: use '1111' para recusar" required>
+            </div>
+            <div v-if="paymentError" class="alert alert-danger">{{ paymentError }}</div>
+            <button type="submit" class="btn btn-primary" :disabled="!isLoggedIn || cartItems.length === 0">Processar Pagamento</button>
+          </form>
+        </div>
+      </div>
+
       <div v-if="orderError" class="alert alert-danger">{{ orderError }}</div>
       <div v-if="orderSuccess" class="alert alert-success">{{ orderSuccess }}</div>
     </div>
@@ -31,6 +52,9 @@ export default {
       orderError: null,
       orderSuccess: null,
       isLoggedIn: false,
+      paymentMethod: 'CREDIT_CARD',
+      cardNumber: '',
+      paymentError: null,
     };
   },
   computed: {
@@ -59,23 +83,24 @@ export default {
     checkLoginStatus() {
       this.isLoggedIn = !!localStorage.getItem('authToken');
     },
-    async checkout() {
+    async processPayment() {
       if (!this.isLoggedIn) {
-        this.orderError = 'Você precisa estar logado para finalizar o pedido.';
+        this.paymentError = 'Você precisa estar logado para processar o pagamento.';
         return;
       }
 
       if (this.cartItems.length === 0) {
-        this.orderError = 'Seu carrinho está vazio.';
+        this.paymentError = 'Seu carrinho está vazio.';
         return;
       }
 
-      try {
-        this.orderError = null;
-        this.orderSuccess = null;
+      this.paymentError = null;
+      this.orderError = null;
+      this.orderSuccess = null;
 
-        // Para simplificar, vamos usar um endereço fixo. Em um app real, o usuário informaria.
-        const enderecoPedido = 'Endereço de Entrega Fictício';
+      try {
+        // Primeiro, cria o pedido
+        const enderecoPedido = 'Endereço de Entrega Fictício'; // Simplificado
         const produtoIds = this.cartItems.map(item => item.idProduto);
 
         const orderData = {
@@ -83,13 +108,31 @@ export default {
           produtoIds: produtoIds,
         };
 
-        await api.post('/pedidos', orderData);
-        this.orderSuccess = 'Pedido finalizado com sucesso!';
-        localStorage.removeItem('cart'); // Limpa o carrinho
-        this.loadCart(); // Recarrega o carrinho (agora vazio)
+        const orderResponse = await api.post('/pedidos', orderData);
+        const pedidoId = orderResponse.data.codigoPedido;
+
+        // Em seguida, processa o pagamento para o pedido recém-criado
+        const paymentData = {
+          codigoPedido: pedidoId,
+          metodoPagamento: this.paymentMethod,
+          valor: this.cartTotal,
+          numeroCartao: this.cardNumber, // Apenas para simulação
+        };
+
+        const paymentResponse = await api.post('/pagamentos/processar', paymentData);
+
+        if (paymentResponse.data.status === 'APROVADO') {
+          this.orderSuccess = 'Pagamento aprovado e pedido finalizado com sucesso!';
+          localStorage.removeItem('cart');
+          this.loadCart();
+        } else {
+          this.paymentError = `Pagamento ${paymentResponse.data.status.toLowerCase()}. Tente novamente ou use outro cartão.`;
+        }
+
       } catch (err) {
+        this.paymentError = 'Erro ao processar pagamento. Verifique os dados e tente novamente.';
         this.orderError = 'Erro ao finalizar pedido. Tente novamente.';
-        console.error('Erro ao finalizar pedido:', err.response ? err.response.data : err);
+        console.error('Erro no pagamento/pedido:', err.response ? err.response.data : err);
       }
     },
   },

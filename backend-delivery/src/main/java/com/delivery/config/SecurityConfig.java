@@ -68,6 +68,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT, "/api/entregas/{id}/status").hasAnyRole("ADMIN", "DELIVERY")
                 .requestMatchers(HttpMethod.GET, "/api/entregas/minhas").hasRole("DELIVERY")
 
+                // Rotas de pagamento
+                .requestMatchers(HttpMethod.POST, "/api/pagamentos/processar").authenticated()
+
                 // Rotas de usuário autenticado
                 .requestMatchers("/api/usuarios/me/**").authenticated()
                 .requestMatchers("/api/pedidos/**").authenticated()

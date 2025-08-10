@@ -10,6 +10,7 @@ import com.delivery.repository.EntregaRepository;
 import com.delivery.repository.PessoaRepository;
 import com.delivery.repository.PedidoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,9 @@ public class EntregaService {
 
     @Autowired
     private EntregaMapper entregaMapper;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate; // Injetar SimpMessagingTemplate
 
     public EntregaResponseDTO criarEntrega(EntregaRequestDTO entregaDTO) {
         // Lógica para criar uma nova entrega
@@ -89,7 +93,7 @@ public class EntregaService {
         boolean isAdmin = usuarioLogado.getRoles().stream().anyMatch(r -> r.getPapel().equals("ROLE_ADMIN"));
         boolean isEntregador = usuarioLogado.getRoles().stream().anyMatch(r -> r.getPapel().equals("ROLE_DELIVERY"));
 
-        if (!isAdmin && (!isEntregador || !entrega.getEntregador().getCodigo().equals(usuarioLogado.getCodigo()))) {
+        if (!isAdmin && (!isEntregador || entrega.getEntregador() == null || !entrega.getEntregador().getCodigo().equals(usuarioLogado.getCodigo()))) {
             throw new SecurityException("Usuário não autorizado a atualizar o status desta entrega.");
         }
 
@@ -101,6 +105,17 @@ public class EntregaService {
         }
 
         Entrega entregaAtualizada = entregaRepository.save(entrega);
+
+        // Enviar notificação WebSocket para o cliente do pedido
+        // Tópico específico para o pedido: /topic/pedidos/{codigoPedido}
+        if (entregaAtualizada.getPedido() != null && entregaAtualizada.getPedido().getCodigoPedido() != null) {
+            messagingTemplate.convertAndSend("/topic/pedidos/" + entregaAtualizada.getPedido().getCodigoPedido(),
+                    "Status do seu pedido " + entregaAtualizada.getPedido().getCodigoPedido() + " atualizado para: " + entregaAtualizada.getStatus());
+        }
+
+        // Enviar notificação geral para entregadores (se for relevante, ex: nova entrega disponível)
+        // messagingTemplate.convertAndSend("/topic/entregas/disponiveis", "Nova entrega disponível!");
+
         return entregaMapper.toResponseDTO(entregaAtualizada);
     }
 
