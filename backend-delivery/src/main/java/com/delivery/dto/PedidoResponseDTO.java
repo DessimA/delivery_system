@@ -7,6 +7,8 @@ public class PedidoResponseDTO {
     private Long codigoCliente;
     private String enderecoPedido;
     private float valorTotal;
+    private String status;
+    private java.util.Date dataPedido;
     private List<ProdutoResponseDTO> produtos;
 
     // Getters and Setters
@@ -48,5 +50,21 @@ public class PedidoResponseDTO {
 
     public void setProdutos(List<ProdutoResponseDTO> produtos) {
         this.produtos = produtos;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public java.util.Date getDataPedido() {
+        return dataPedido;
+    }
+
+    public void setDataPedido(java.util.Date dataPedido) {
+        this.dataPedido = dataPedido;
     }
 }

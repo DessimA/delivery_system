@@ -19,8 +19,11 @@ import java.util.List;
 @SecurityRequirement(name = "bearerAuth")
 public class RestauranteController {
 
-    @Autowired
-    private ProdutoService produtoService;
+    private final ProdutoService produtoService;
+
+    public RestauranteController(ProdutoService produtoService) {
+        this.produtoService = produtoService;
+    }
 
     @GetMapping("/me/produtos")
     @Operation(summary = "Lista todos os produtos do estabelecimento do usuário logado (RESTAURANT)")

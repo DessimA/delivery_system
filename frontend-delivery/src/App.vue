@@ -1,92 +1,72 @@
 <template>
   <div id="app">
     <AppNavbar />
-    <router-view />
-    <div v-if="notification" class="alert alert-info fixed-bottom m-3" role="alert">
-      {{ notification }}
-    </div>
+    <main class="app-main-content">
+      <router-view />
+    </main>
+
+    <NotificationDisplay />
+
+    <footer class="app-footer">
+      <div class="container text-center">
+        <span class="text-muted">&copy; 2025 Delivery System. All rights reserved.</span>
+      </div>
+    </footer>
   </div>
 </template>
 
-<script>
+<script setup>
+import { onMounted } from 'vue';
 import AppNavbar from './components/AppNavbar.vue';
-import SockJS from 'sockjs-client';
-import Stomp from 'stompjs';
+import NotificationDisplay from './components/layout/NotificationDisplay.vue';
+import { useAuthStore } from './stores/auth';
+import { useWebSocket } from './composables/useWebSocket';
 
-export default {
-  name: 'App',
-  components: {
-    AppNavbar,
-  },
-  data() {
-    return {
-      stompClient: null,
-      notification: null,
-      notificationTimeout: null,
-    };
-  },
-  mounted() {
-    this.connectWebSocket();
-  },
-  beforeUnmount() {
-    this.disconnectWebSocket();
-  },
-  methods: {
-    connectWebSocket() {
-      const socket = new SockJS('http://localhost:8080/ws');
-      this.stompClient = Stomp.over(socket);
-      this.stompClient.connect({}, frame => {
-        console.log('Connected: ' + frame);
-        // Subscribe to general notifications
-        this.stompClient.subscribe('/topic/general', message => {
-          this.showNotification(message.body);
-        });
+const authStore = useAuthStore();
+const { connect } = useWebSocket();
 
-        // Subscribe to user-specific notifications (e.g., for order updates)
-        // This assumes the user object is available in localStorage
-        const user = JSON.parse(localStorage.getItem('user'));
-        if (user && user.codigo) {
-          this.stompClient.subscribe('/topic/pedidos/' + user.codigo, message => {
-            this.showNotification('Seu pedido: ' + message.body);
-          });
-        }
-      });
-    },
-    disconnectWebSocket() {
-      if (this.stompClient) {
-        this.stompClient.disconnect();
-        console.log("Disconnected");
-      }
-    },
-    showNotification(message) {
-      this.notification = message;
-      if (this.notificationTimeout) {
-        clearTimeout(this.notificationTimeout);
-      }
-      this.notificationTimeout = setTimeout(() => {
-        this.notification = null;
-      }, 5000); // Notification disappears after 5 seconds
-    },
-  },
-};
+onMounted(() => {
+  // Initialize auth state from localStorage on app load
+  authStore.initializeAuth();
+
+  // The watcher inside useWebSocket will automatically connect if/when authenticated.
+  // We can trigger an initial connect attempt here if needed.
+  if (authStore.isAuthenticated) {
+      connect();
+  }
+});
 </script>
 
-<style>
+<style lang="scss">
 /* Estilos globais */
-body {
-  font-family: 'Arial', sans-serif;
-  background-color: #f8f9fa;
+html, body {
+  height: 100%;
+  margin: 0;
+  background-color: var(--color-surface);
 }
 
-.container {
-  margin-top: 20px;
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
-.fixed-bottom {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  z-index: 1050; /* Bootstrap's modal-backdrop z-index is 1040 */
+.app-main-content {
+  flex-grow: 1;
+  padding-top: var(--spacing-md); /* Adjust based on navbar height */
+  padding-bottom: var(--spacing-md); /* Adjust based on footer height */
+}
+
+.app-footer {
+  background-color: var(--color-dark);
+  color: var(--color-text-light);
+  padding: var(--spacing-md) 0;
+  margin-top: auto;
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-md);
+  }
 }
 </style>

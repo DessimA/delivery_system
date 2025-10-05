@@ -7,57 +7,55 @@ import com.delivery.model.Pessoa;
 import com.delivery.service.PessoaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import org.springframework.beans.factory.annotation.Autowired;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/usuarios")
+@Tag(name = "Usuários", description = "Endpoints para gerenciamento de usuários")
 public class UsuarioController {
 
-    @Autowired
-    private PessoaService pessoaService;
+    private final PessoaService pessoaService;
+    private final UsuarioMapper usuarioMapper;
 
-    @Autowired
-    private UsuarioMapper usuarioMapper; // Adicionar o mapper
+    public UsuarioController(PessoaService pessoaService, UsuarioMapper usuarioMapper) {
+        this.pessoaService = pessoaService;
+        this.usuarioMapper = usuarioMapper;
+    }
 
     @PostMapping("/registrar")
-    public ResponseEntity<UsuarioResponseDTO> registrar(@RequestBody UsuarioRequestDTO usuarioDTO) {
-        UsuarioResponseDTO novoUsuario = pessoaService.criarUsuario(usuarioDTO);
+    @Operation(summary = "Registra um novo usuário (público)")
+    public ResponseEntity<UsuarioResponseDTO> registrar(@RequestBody UsuarioRequestDTO usuarioRequestDTO) {
+        UsuarioResponseDTO novoUsuario = pessoaService.criarUsuario(usuarioRequestDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(novoUsuario);
     }
 
     @GetMapping("/me")
-    @Operation(summary = "Busca os dados do usuário autenticado", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Busca os dados do usuário autenticado")
+    @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<UsuarioResponseDTO> buscarMeuCadastro() {
-        String email = getEmailUsuarioLogado();
-        Pessoa pessoaLogada = pessoaService.buscarProEmail(email);
-        if (pessoaLogada != null) {
-            return ResponseEntity.ok(usuarioMapper.toResponseDTO(pessoaLogada));
-        }
-        return ResponseEntity.notFound().build();
+        Pessoa pessoaLogada = getPessoaLogada();
+        return ResponseEntity.ok(usuarioMapper.toResponseDTO(pessoaLogada));
     }
 
     @PutMapping("/me")
-    public ResponseEntity<UsuarioResponseDTO> atualizarMeuCadastro(@RequestBody UsuarioRequestDTO usuarioDTO) {
-        String email = getEmailUsuarioLogado();
-        Pessoa pessoaLogada = pessoaService.buscarProEmail(email);
-
-        UsuarioResponseDTO usuarioAtualizado = pessoaService.atualizarUsuario(pessoaLogada.getCodigo(), usuarioDTO);
-        if (usuarioAtualizado != null) {
-            return ResponseEntity.ok(usuarioAtualizado);
-        }
-        return ResponseEntity.notFound().build();
+    @Operation(summary = "Atualiza os dados do usuário autenticado")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<UsuarioResponseDTO> atualizarMeuCadastro(@RequestBody UsuarioRequestDTO usuarioRequestDTO) {
+        Pessoa pessoaLogada = getPessoaLogada();
+        UsuarioResponseDTO usuarioAtualizado = pessoaService.atualizarUsuario(pessoaLogada.getCodigo(), usuarioRequestDTO);
+        return ResponseEntity.ok(usuarioAtualizado);
     }
 
-    private String getEmailUsuarioLogado() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof UserDetails) {
-            return ((UserDetails) principal).getUsername();
+    private Pessoa getPessoaLogada() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        Pessoa pessoa = pessoaService.buscarPorEmail(email);
+        if (pessoa == null) {
+            throw new IllegalStateException("Inconsistência de dados: usuário autenticado não encontrado: " + email);
         }
-        return principal.toString();
+        return pessoa;
     }
 }

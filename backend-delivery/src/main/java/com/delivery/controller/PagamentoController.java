@@ -17,13 +17,16 @@ import org.springframework.web.bind.annotation.*;
 @SecurityRequirement(name = "bearerAuth")
 public class PagamentoController {
 
-    @Autowired
-    private PagamentoService pagamentoService;
+    private final PagamentoService pagamentoService;
+
+    public PagamentoController(PagamentoService pagamentoService) {
+        this.pagamentoService = pagamentoService;
+    }
 
     @PostMapping("/processar")
     @Operation(summary = "Processa um pagamento para um pedido (USER)")
-    public ResponseEntity<PagamentoResponseDTO> processarPagamento(@RequestBody PagamentoRequestDTO pagamentoDTO) {
-        PagamentoResponseDTO response = pagamentoService.processarPagamento(pagamentoDTO);
-        return ResponseEntity.status(HttpStatus.OK).body(response);
+    public ResponseEntity<PagamentoResponseDTO> processarPagamento(@RequestBody PagamentoRequestDTO pagamentoRequestDTO) {
+        PagamentoResponseDTO response = pagamentoService.processarPagamento(pagamentoRequestDTO);
+        return ResponseEntity.ok(response);
     }
 }

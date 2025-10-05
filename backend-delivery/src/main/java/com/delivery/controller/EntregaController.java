@@ -19,13 +19,16 @@ import java.util.List;
 @SecurityRequirement(name = "bearerAuth")
 public class EntregaController {
 
-    @Autowired
-    private EntregaService entregaService;
+    private final EntregaService entregaService;
+
+    public EntregaController(EntregaService entregaService) {
+        this.entregaService = entregaService;
+    }
 
     @PostMapping
     @Operation(summary = "Cria uma nova entrega (ADMIN)")
-    public ResponseEntity<EntregaResponseDTO> criarEntrega(@RequestBody EntregaRequestDTO entregaDTO) {
-        EntregaResponseDTO novaEntrega = entregaService.criarEntrega(entregaDTO);
+    public ResponseEntity<EntregaResponseDTO> criarEntrega(@RequestBody EntregaRequestDTO entregaRequestDTO) {
+        EntregaResponseDTO novaEntrega = entregaService.criarEntrega(entregaRequestDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(novaEntrega);
     }
 

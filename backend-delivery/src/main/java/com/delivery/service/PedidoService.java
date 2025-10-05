@@ -7,34 +7,43 @@ import com.delivery.model.Pedido;
 import com.delivery.model.Produto;
 import com.delivery.repository.PedidoRepository;
 import com.delivery.repository.ProdutoRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public class PedidoService {
 
-    @Autowired
-    private PedidoRepository pedidoRepository;
+    private static final String STATUS_AGUARDANDO_PAGAMENTO = "AGUARDANDO_PAGAMENTO";
 
-    @Autowired
-    private ProdutoRepository produtoRepository;
+    private final PedidoRepository pedidoRepository;
+    private final ProdutoRepository produtoRepository;
+    private final PedidoMapper pedidoMapper;
 
-    @Autowired
-    private PedidoMapper pedidoMapper;
+    public PedidoService(PedidoRepository pedidoRepository, ProdutoRepository produtoRepository, PedidoMapper pedidoMapper) {
+        this.pedidoRepository = pedidoRepository;
+        this.produtoRepository = produtoRepository;
+        this.pedidoMapper = pedidoMapper;
+    }
 
-    public PedidoResponseDTO criarPedido(PedidoRequestDTO pedidoDTO, Long clienteId) {
+    public PedidoResponseDTO criarPedido(PedidoRequestDTO pedidoRequestDTO, Long clienteId) {
         Pedido pedido = new Pedido();
-        pedido.setEnderecoPedido(pedidoDTO.getEnderecoPedido());
+        pedido.setEnderecoPedido(pedidoRequestDTO.getEnderecoPedido());
         pedido.setCodigoCliente(clienteId);
 
-        List<Produto> produtos = produtoRepository.findAllById(pedidoDTO.getProdutoIds());
+        List<Produto> produtos = produtoRepository.findAllById(pedidoRequestDTO.getProdutoIds());
+        if (produtos.size() != pedidoRequestDTO.getProdutoIds().size()) {
+            throw new IllegalArgumentException("Um ou mais IDs de produtos são inválidos.");
+        }
         pedido.setProdutos(produtos);
 
         float valorTotal = (float) produtos.stream().mapToDouble(Produto::getPreco).sum();
         pedido.setValorTotal(valorTotal);
+
+        pedido.setDataPedido(new Date());
+        pedido.setStatus(STATUS_AGUARDANDO_PAGAMENTO);
 
         Pedido pedidoSalvo = pedidoRepository.save(pedido);
         return pedidoMapper.toResponseDTO(pedidoSalvo);
@@ -55,10 +64,13 @@ public class PedidoService {
     public PedidoResponseDTO buscarPorId(Long id) {
         return pedidoRepository.findById(id)
                 .map(pedidoMapper::toResponseDTO)
-                .orElse(null);
+                .orElseThrow(() -> new RuntimeException("Pedido não encontrado com o ID: " + id)); // Idealmente, usar uma exceção customizada
     }
 
     public void excluir(Long id) {
+        if (!pedidoRepository.existsById(id)) {
+            throw new RuntimeException("Pedido não encontrado com o ID: " + id); // Idealmente, usar uma exceção customizada
+        }
         pedidoRepository.deleteById(id);
     }
 }

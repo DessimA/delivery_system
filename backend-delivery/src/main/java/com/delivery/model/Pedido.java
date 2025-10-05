@@ -1,6 +1,8 @@
 package com.delivery.model;
 
 import jakarta.persistence.*;
+
+import java.util.Date;
 import java.util.List;
 
 @Entity
@@ -10,11 +12,16 @@ public class Pedido {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long codigoPedido;
 
-    private Long codigoCliente; // Renomeado de codigoPessoa para clareza
+    private Long codigoCliente;
 
     private float valorTotal;
 
     private String enderecoPedido;
+
+    private String status;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date dataPedido;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -86,5 +93,21 @@ public class Pedido {
 
     public void setPagamento(Pagamento pagamento) {
         this.pagamento = pagamento;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Date getDataPedido() {
+        return dataPedido;
+    }
+
+    public void setDataPedido(Date dataPedido) {
+        this.dataPedido = dataPedido;
     }
 }

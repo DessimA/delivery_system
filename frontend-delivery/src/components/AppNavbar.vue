@@ -1,95 +1,262 @@
 <template>
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container-fluid">
-      <router-link class="navbar-brand" to="/">DeliveryApp</router-link>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-          <li class="nav-item">
-            <router-link class="nav-link" to="/products">Produtos</router-link>
-          </li>
-          <li class="nav-item">
-            <router-link class="nav-link" to="/cart">Carrinho</router-link>
-          </li>
-          <li class="nav-item" v-if="isRestaurantOwner">
-            <router-link class="nav-link" to="/restaurant/dashboard">Meu Restaurante</router-link>
-          </li>
-          <li class="nav-item" v-if="isDeliveryUser">
-            <router-link class="nav-link" to="/delivery/dashboard">Minhas Entregas</router-link>
-          </li>
-        </ul>
-        <ul class="navbar-nav">
-          <li class="nav-item" v-if="!isLoggedIn">
-            <router-link class="nav-link" to="/login">Login</router-link>
-          </li>
-          <li class="nav-item" v-if="!isLoggedIn">
-            <router-link class="nav-link" to="/register">Registrar</router-link>
-          </li>
-          <li class="nav-item dropdown" v-if="isLoggedIn">
-            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-              {{ userEmail }}
-            </a>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-              <li><a class="dropdown-item" href="#" @click.prevent="logout">Logout</a></li>
-            </ul>
-          </li>
-        </ul>
+  <nav class="app-navbar">
+    <div class="navbar-container">
+      <router-link to="/" class="navbar-brand">
+        <img src="/images/logo.svg" alt="DeliveryApp Logo" class="logo" />
+        <span>DeliveryApp</span>
+      </router-link>
+
+      <div class="navbar-toggle" @click="toggleMobileMenu">
+        <Icon :name="isMobileMenuOpen ? 'x' : 'menu'" />
+      </div>
+
+      <div :class="['navbar-links', { 'is-open': isMobileMenuOpen }]">
+        <router-link to="/products" class="nav-item">Produtos</router-link>
+        <router-link to="/cart" class="nav-item cart-icon-wrapper">
+          <Icon name="shopping-cart" />
+          <span v-if="cartItemCount > 0" class="cart-badge">{{ cartItemCount }}</span>
+        </router-link>
+        <router-link v-if="authStore.isRestaurantOwner" to="/restaurant/dashboard" class="nav-item">Meu Restaurante</router-link>
+        <router-link v-if="authStore.isDeliveryUser" to="/delivery/dashboard" class="nav-item">Minhas Entregas</router-link>
+        <router-link v-if="authStore.isLoggedIn" to="/orders" class="nav-item">Meus Pedidos</router-link>
+
+        <div class="navbar-auth">
+          <template v-if="!authStore.isLoggedIn">
+            <router-link to="/login" class="nav-item">Login</router-link>
+            <router-link to="/register" class="nav-item primary">Registrar</router-link>
+          </template>
+          <template v-else>
+            <div class="nav-item user-profile" @click="toggleUserDropdown">
+              <Icon name="user-circle" class="user-avatar" />
+              <span>{{ authStore.user?.email || 'Usuário' }}</span>
+              <Icon :name="isUserDropdownOpen ? 'chevron-up' : 'chevron-down'" class="dropdown-arrow" />
+              <div v-if="isUserDropdownOpen" class="user-dropdown">
+                <router-link to="/profile" class="dropdown-item" @click="closeUserDropdown">
+                  <Icon name="user" /> Perfil
+                </router-link>
+                <div class="dropdown-item" @click="logout">
+                  <Icon name="log-out" /> Sair
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
       </div>
     </div>
   </nav>
 </template>
 
-<script>
-export default {
-  name: 'AppNavbar',
-  data() {
-    return {
-      isLoggedIn: false,
-      user: null,
-    };
-  },
-  computed: {
-    isRestaurantOwner() {
-      return this.user && this.user.roles && this.user.roles.includes('RESTAURANT');
-    },
-    isDeliveryUser() {
-      return this.user && this.user.roles && this.user.roles.includes('DELIVERY');
-    },
-    userEmail() {
-        return this.user ? this.user.email : '';
-    }
-  },
-  created() {
-    this.checkLoginStatus();
-    window.addEventListener('storage', this.checkLoginStatus);
-  },
-  beforeUnmount() {
-    window.removeEventListener('storage', this.checkLoginStatus);
-  },
-  methods: {
-    checkLoginStatus() {
-      const token = localStorage.getItem('authToken');
-      this.isLoggedIn = !!token;
-      if (this.isLoggedIn) {
-        this.user = JSON.parse(localStorage.getItem('user'));
-      } else {
-        this.user = null;
-      }
-    },
-    logout() {
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user');
-      this.isLoggedIn = false;
-      this.user = null;
-      window.dispatchEvent(new Event('storage')); // Notifica outros componentes
-      this.$router.push('/login');
-    },
-  },
+<script setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth'; // Será criado
+import { useCartStore } from '@/stores/cart'; // Será criado
+import BaseIcon from '@/components/base/BaseIcon.vue';
+
+const authStore = useAuthStore();
+const cartStore = useCartStore();
+const router = useRouter();
+
+const isMobileMenuOpen = ref(false);
+const isUserDropdownOpen = ref(false);
+
+const cartItemCount = computed(() => cartStore.itemCount); // Virá do store
+
+const toggleMobileMenu = () => {
+  isMobileMenuOpen.value = !isMobileMenuOpen.value;
+};
+
+const toggleUserDropdown = () => {
+  isUserDropdownOpen.value = !isUserDropdownOpen.value;
+};
+
+const closeUserDropdown = () => {
+  isUserDropdownOpen.value = false;
+};
+
+const handleClickOutside = (event) => {
+  if (isUserDropdownOpen.value && !event.target.closest('.user-profile')) {
+    isUserDropdownOpen.value = false;
+  }
+};
+
+const logout = () => {
+  authStore.logout();
+  router.push('/login');
+  closeUserDropdown();
 };
 </script>
 
-<style scoped>
-/* Adicione estilos específicos para o Navbar aqui, se necessário */
+<style lang="scss" scoped>
+.app-navbar {
+  background-color: var(--color-dark);
+  color: var(--color-text-light);
+  padding: var(--spacing-sm) var(--spacing-md);
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 0;
+  z-index: 999;
+}
+
+.navbar-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: var(--color-text-light);
+  text-decoration: none;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+
+  .logo {
+    height: 30px; /* Adjust logo size */
+  }
+}
+
+.navbar-toggle {
+  display: none;
+  font-size: var(--font-size-xl);
+  cursor: pointer;
+
+  @media (max-width: 768px) {
+    display: block;
+  }
+}
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background-color: var(--color-dark);
+    padding: var(--spacing-md) 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    transform: translateY(-100%);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+
+    &.is-open {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: all;
+    }
+  }
+}
+
+.nav-item {
+  color: var(--color-text-light);
+  text-decoration: none;
+  padding: var(--spacing-sm) var(--spacing-xs);
+  transition: color 0.2s ease;
+  white-space: nowrap;
+
+  &:hover,
+  &.router-link-active {
+    color: var(--color-primary);
+  }
+
+  &.primary {
+    background-color: var(--color-primary);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
+    &:hover {
+      background-color: var(--color-primary-dark);
+      color: var(--color-text-light);
+    }
+  }
+}
+
+.cart-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  .cart-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background-color: var(--color-danger);
+    color: var(--color-text-light);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-xs);
+    padding: 2px 6px;
+    min-width: 20px;
+    text-align: center;
+  }
+}
+
+.navbar-auth {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    width: 100%;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+
+    .nav-item {
+      width: 100%;
+      text-align: center;
+    }
+  }
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  cursor: pointer;
+  position: relative;
+
+  .user-avatar {
+    font-size: var(--font-size-xl);
+  }
+
+  .dropdown-arrow {
+    font-size: var(--font-size-sm);
+  }
+
+  .user-dropdown {
+    position: absolute;
+    top: calc(100% + var(--spacing-sm));
+    right: 0;
+    background-color: var(--color-background);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    min-width: 160px;
+    overflow: hidden;
+    z-index: 1000;
+
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      padding: var(--spacing-sm) var(--spacing-md);
+      color: var(--color-text-dark);
+      text-decoration: none;
+      white-space: nowrap;
+
+      &:hover {
+        background-color: var(--color-surface);
+        color: var(--color-primary);
+      }
+    }
+  }
+}
 </style>

@@ -8,10 +8,8 @@ import com.delivery.model.Pessoa;
 import com.delivery.model.Produto;
 import com.delivery.repository.PessoaRepository;
 import com.delivery.repository.ProdutoRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,17 +24,19 @@ import java.util.stream.Collectors;
 @Service
 public class ProdutoService {
 
-    @Autowired
-    private ProdutoRepository produtoRepository;
+    private static final String ROLE_ADMIN = "ROLE_ADMIN";
 
-    @Autowired
-    private PessoaRepository pessoaRepository; // Adicionado para buscar o usuário
+    private final ProdutoRepository produtoRepository;
+    private final PessoaRepository pessoaRepository;
+    private final ProdutoMapper produtoMapper;
+    private final String uploadDir;
 
-    @Autowired
-    private ProdutoMapper produtoMapper;
-
-    @Value("${file.upload-dir}")
-    private String uploadDir;
+    public ProdutoService(ProdutoRepository produtoRepository, PessoaRepository pessoaRepository, ProdutoMapper produtoMapper, @Value("${file.upload-dir}") String uploadDir) {
+        this.produtoRepository = produtoRepository;
+        this.pessoaRepository = pessoaRepository;
+        this.produtoMapper = produtoMapper;
+        this.uploadDir = uploadDir;
+    }
 
     public List<ProdutoResponseDTO> listarTodos() {
         return produtoRepository.findAll().stream()
@@ -46,11 +46,11 @@ public class ProdutoService {
 
     public List<ProdutoResponseDTO> listarDoMeuEstabelecimento() {
         Pessoa pessoa = getAuthenticatedUser();
-        if (pessoa.getEstabelecimento() == null) {
+        Estabelecimento estabelecimento = pessoa.getEstabelecimento();
+        if (estabelecimento == null) {
             throw new IllegalStateException("Usuário não é dono de um estabelecimento.");
         }
-        Long estabelecimentoId = pessoa.getEstabelecimento().getId();
-        return produtoRepository.findByEstabelecimentoId(estabelecimentoId).stream()
+        return produtoRepository.findByEstabelecimentoId(estabelecimento.getId()).stream()
                 .map(produtoMapper::toResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -58,28 +58,18 @@ public class ProdutoService {
     public ProdutoResponseDTO buscarPorId(Long id) {
         return produtoRepository.findById(id)
                 .map(produtoMapper::toResponseDTO)
-                .orElse(null);
+                .orElseThrow(() -> new RuntimeException("Produto não encontrado com o ID: " + id));
     }
 
-    public ProdutoResponseDTO criarProduto(ProdutoRequestDTO produtoDTO, MultipartFile imagem) {
-        Produto produto = produtoMapper.toEntity(produtoDTO);
+    public ProdutoResponseDTO criarProduto(ProdutoRequestDTO produtoRequestDTO, MultipartFile imagem) {
+        Produto produto = produtoMapper.toEntity(produtoRequestDTO);
 
-        // Associa o produto ao estabelecimento do usuário logado
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String userEmail;
-        if (principal instanceof UserDetails) {
-            userEmail = ((UserDetails)principal).getUsername();
-        } else {
-            userEmail = principal.toString();
+        Pessoa pessoaLogada = getAuthenticatedUser();
+        Estabelecimento estabelecimento = pessoaLogada.getEstabelecimento();
+        if (estabelecimento == null) {
+            throw new IllegalStateException("Usuário não tem um estabelecimento associado para criar produtos.");
         }
-
-        Pessoa pessoa = pessoaRepository.findByEmail(userEmail);
-        if (pessoa != null && pessoa.getEstabelecimento() != null) {
-            produto.setEstabelecimento(pessoa.getEstabelecimento());
-        } else {
-            // Lançar exceção ou tratar o caso de usuário sem estabelecimento
-            throw new IllegalStateException("Usuário não tem um estabelecimento associado ou não foi encontrado.");
-        }
+        produto.setEstabelecimento(estabelecimento);
 
         if (imagem != null && !imagem.isEmpty()) {
             String nomeArquivo = salvarImagem(imagem);
@@ -89,57 +79,55 @@ public class ProdutoService {
         return produtoMapper.toResponseDTO(produtoSalvo);
     }
 
-    public ProdutoResponseDTO atualizarProduto(Long id, ProdutoRequestDTO produtoDTO) {
-        Pessoa pessoa = getAuthenticatedUser();
-        return produtoRepository.findById(id).map(produtoExistente -> {
-            if (!produtoPertenceAoUsuario(produtoExistente, pessoa)) {
-                throw new SecurityException("Usuário não autorizado a modificar este produto.");
-            }
-            produtoExistente.setNomeProduto(produtoDTO.getNomeProduto());
-            produtoExistente.setDescricao(produtoDTO.getDescricao());
-            produtoExistente.setPreco(produtoDTO.getPreco());
-            Produto produtoAtualizado = produtoRepository.save(produtoExistente);
-            return produtoMapper.toResponseDTO(produtoAtualizado);
-        }).orElse(null);
+    public ProdutoResponseDTO atualizarProduto(Long id, ProdutoRequestDTO produtoRequestDTO) {
+        Pessoa pessoaLogada = getAuthenticatedUser();
+        Produto produtoExistente = produtoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Produto não encontrado com o ID: " + id));
+
+        // TODO: Substituir por anotações de segurança. Ex: @PreAuthorize("@customSecurity.podeModificarProduto(authentication, #id)")
+        if (!isUsuarioAutorizadoParaModificar(produtoExistente, pessoaLogada)) {
+            throw new SecurityException("Usuário não autorizado a modificar este produto.");
+        }
+
+        produtoExistente.setNomeProduto(produtoRequestDTO.getNomeProduto());
+        produtoExistente.setDescricao(produtoRequestDTO.getDescricao());
+        produtoExistente.setPreco(produtoRequestDTO.getPreco());
+        Produto produtoAtualizado = produtoRepository.save(produtoExistente);
+        return produtoMapper.toResponseDTO(produtoAtualizado);
     }
 
     public void excluir(Long id) {
-        Pessoa pessoa = getAuthenticatedUser();
-        produtoRepository.findById(id).ifPresent(produto -> {
-            if (!produtoPertenceAoUsuario(produto, pessoa)) {
-                throw new SecurityException("Usuário não autorizado a excluir este produto.");
-            }
-            produtoRepository.delete(produto);
-        });
+        Pessoa pessoaLogada = getAuthenticatedUser();
+        Produto produto = produtoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Produto não encontrado com o ID: " + id));
+
+        // TODO: Substituir por anotações de segurança.
+        if (!isUsuarioAutorizadoParaModificar(produto, pessoaLogada)) {
+            throw new SecurityException("Usuário não autorizado a excluir este produto.");
+        }
+        produtoRepository.delete(produto);
     }
 
     private Pessoa getAuthenticatedUser() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String userEmail;
-        if (principal instanceof UserDetails) {
-            userEmail = ((UserDetails)principal).getUsername();
-        } else {
-            userEmail = principal.toString();
-        }
-        Pessoa pessoa = pessoaRepository.findByEmail(userEmail);
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        Pessoa pessoa = pessoaRepository.findByEmail(email);
         if (pessoa == null) {
-            throw new IllegalStateException("Usuário autenticado não encontrado no banco de dados.");
+            throw new IllegalStateException("Inconsistência de dados: usuário autenticado não encontrado: " + email);
         }
         return pessoa;
     }
 
-    private boolean produtoPertenceAoUsuario(Produto produto, Pessoa pessoa) {
-        // ADMIN pode modificar qualquer produto
-        if (pessoa.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
+    private boolean isUsuarioAutorizadoParaModificar(Produto produto, Pessoa pessoa) {
+        if (pessoa.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals(ROLE_ADMIN))) {
             return true;
         }
-        // Usuário RESTAURANT só pode modificar produtos do seu estabelecimento
-        if (pessoa.getEstabelecimento() != null && produto.getEstabelecimento() != null) {
-            return produto.getEstabelecimento().getId().equals(pessoa.getEstabelecimento().getId());
-        }
-        return false;
+        Estabelecimento estabelecimentoUsuario = pessoa.getEstabelecimento();
+        Estabelecimento estabelecimentoProduto = produto.getEstabelecimento();
+        return estabelecimentoUsuario != null && estabelecimentoProduto != null &&
+                estabelecimentoProduto.getId().equals(estabelecimentoUsuario.getId());
     }
 
+    // TODO: Extrair a lógica de armazenamento de arquivos para um FileStorageService dedicado.
     private String salvarImagem(MultipartFile imagem) {
         try {
             Path diretorioUpload = Paths.get(uploadDir);
@@ -148,7 +136,10 @@ public class ProdutoService {
             }
 
             String nomeArquivoOriginal = imagem.getOriginalFilename();
-            String extensao = nomeArquivoOriginal.substring(nomeArquivoOriginal.lastIndexOf("."));
+            String extensao = "";
+            if (nomeArquivoOriginal != null && nomeArquivoOriginal.contains(".")) {
+                extensao = nomeArquivoOriginal.substring(nomeArquivoOriginal.lastIndexOf("."));
+            }
             String nomeArquivoUnico = UUID.randomUUID().toString() + extensao;
 
             Path caminhoArquivo = diretorioUpload.resolve(nomeArquivoUnico);

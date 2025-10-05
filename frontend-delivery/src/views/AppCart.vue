@@ -1,144 +1,231 @@
 <template>
-  <div class="container mt-5">
-    <h1 class="mb-4">Seu Carrinho</h1>
-    <div v-if="cartItems.length === 0" class="alert alert-info">Seu carrinho está vazio.</div>
-    <div v-else>
-      <ul class="list-group mb-4">
-        <li class="list-group-item d-flex justify-content-between align-items-center" v-for="item in cartItems" :key="item.idProduto">
-          {{ item.nomeProduto }} - R$ {{ item.preco.toFixed(2) }}
-          <button @click="removeFromCart(item.idProduto)" class="btn btn-danger btn-sm">Remover</button>
-        </li>
-      </ul>
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4>Total: R$ {{ cartTotal.toFixed(2) }}</h4>
+  <div class="cart-container">
+    <div class="cart-header">
+      <h1>Seu Carrinho</h1>
+      <p v-if="cartStore.itemCount > 0">{{ cartStore.itemCount }} {{ cartStore.itemCount === 1 ? 'item' : 'itens' }}</p>
+    </div>
+
+    <div v-if="cartStore.itemCount > 0" class="cart-content">
+      <div class="cart-items">
+        <CartItemCard
+          v-for="item in cartStore.items"
+          :key="item.idProduto"
+          :item="item"
+          @update-quantity="updateQuantity"
+          @remove-item="removeItem"
+        />
       </div>
 
-      <div class="card mb-4">
-        <div class="card-header">Informações de Pagamento</div>
-        <div class="card-body">
-          <form @submit.prevent="processPayment">
-            <div class="mb-3">
-              <label for="metodoPagamento" class="form-label">Método de Pagamento</label>
-              <select class="form-select" id="metodoPagamento" v-model="paymentMethod" required>
-                <option value="CREDIT_CARD">Cartão de Crédito</option>
-                <option value="DEBIT_CARD">Cartão de Débito</option>
-                <option value="PIX">PIX</option>
-              </select>
-            </div>
-            <div class="mb-3">
-              <label for="numeroCartao" class="form-label">Número do Cartão (apenas simulação)</label>
-              <input type="text" class="form-control" id="numeroCartao" v-model="cardNumber" placeholder="Apenas simulação: use '1111' para recusar" required>
-            </div>
-            <div v-if="paymentError" class="alert alert-danger">{{ paymentError }}</div>
-            <button type="submit" class="btn btn-primary" :disabled="!isLoggedIn || cartItems.length === 0">Processar Pagamento</button>
-          </form>
+      <div class="cart-summary">
+        <div class="summary-card">
+          <div class="summary-row">
+            <span>Subtotal</span>
+            <span>{{ formatCurrency(cartStore.total) }}</span>
+          </div>
+          <div class="summary-row">
+            <span>Taxa de entrega</span>
+            <span>{{ formatCurrency(deliveryFee) }}</span>
+          </div>
+          <div class="summary-row total">
+            <span>Total</span>
+            <span>{{ formatCurrency(cartStore.total + deliveryFee) }}</span>
+          </div>
+
+          <BaseButton
+            label="Finalizar Pedido"
+            variant="primary"
+            size="lg"
+            block
+            @click="startCheckout"
+          />
         </div>
       </div>
-
-      <div v-if="orderError" class="alert alert-danger">{{ orderError }}</div>
-      <div v-if="orderSuccess" class="alert alert-success">{{ orderSuccess }}</div>
     </div>
+
+    <EmptyState
+      v-else
+      title="Carrinho vazio"
+      description="Adicione produtos para continuar"
+      icon="shopping-cart"
+      action-label="Ver Produtos"
+      @action="$router.push('/')"
+    />
+
+    <!-- Checkout Modal -->
+    <BaseModal v-model="isCheckoutModalOpen" title="Finalizar Pedido">
+      <form @submit.prevent="handlePlaceOrder" class="checkout-form">
+        <BaseInput v-model="checkoutForm.enderecoPedido" label="Endereço de Entrega" placeholder="Digite seu endereço completo" />
+        <hr />
+        <h4>Pagamento</h4>
+        <BaseInput v-model="checkoutForm.numeroCartao" label="Número do Cartão" placeholder="0000 0000 0000 0000" />
+      </form>
+      <template #footer>
+        <BaseButton label="Cancelar" variant="secondary" @click="isCheckoutModalOpen = false" />
+        <BaseButton label="Pagar" :loading="processing" @click="handlePlaceOrder" />
+      </template>
+    </BaseModal>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, reactive, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useCartStore } from '@/stores/cart';
+import { useAuthStore } from '@/stores/auth';
+import { useNotifications } from '@/composables/useNotifications';
+import { useApi } from '@/composables/useApi';
 import api from '@/api';
 
-export default {
-  name: 'AppCart',
-  data() {
-    return {
-      cartItems: [],
-      orderError: null,
-      orderSuccess: null,
-      isLoggedIn: false,
-      paymentMethod: 'CREDIT_CARD',
-      cardNumber: '',
-      paymentError: null,
-    };
-  },
-  computed: {
-    cartTotal() {
-      return this.cartItems.reduce((sum, item) => sum + item.preco, 0);
-    },
-  },
-  created() {
-    this.loadCart();
-    this.checkLoginStatus();
-    window.addEventListener('storage', this.loadCart); // Reage a mudanças no localStorage
-    window.addEventListener('storage', this.checkLoginStatus);
-  },
-  beforeUnmount() {
-    window.removeEventListener('storage', this.loadCart);
-    window.removeEventListener('storage', this.checkLoginStatus);
-  },
-  methods: {
-    loadCart() {
-      this.cartItems = JSON.parse(localStorage.getItem('cart') || '[]');
-    },
-    removeFromCart(productId) {
-      this.cartItems = this.cartItems.filter(item => item.idProduto !== productId);
-      localStorage.setItem('cart', JSON.stringify(this.cartItems));
-    },
-    checkLoginStatus() {
-      this.isLoggedIn = !!localStorage.getItem('authToken');
-    },
-    async processPayment() {
-      if (!this.isLoggedIn) {
-        this.paymentError = 'Você precisa estar logado para processar o pagamento.';
-        return;
-      }
+import BaseButton from '@/components/base/BaseButton.vue';
+import EmptyState from '@/components/base/EmptyState.vue';
+import CartItemCard from '@/components/cart/CartItemCard.vue';
+import BaseModal from '@/components/base/BaseModal.vue';
+import BaseInput from '@/components/base/BaseInput.vue';
 
-      if (this.cartItems.length === 0) {
-        this.paymentError = 'Seu carrinho está vazio.';
-        return;
-      }
+const cartStore = useCartStore();
+const authStore = useAuthStore();
+const router = useRouter();
+const { addNotification } = useNotifications();
+const { loading: processing, execute } = useApi();
 
-      this.paymentError = null;
-      this.orderError = null;
-      this.orderSuccess = null;
+const deliveryFee = ref(5.00); // Placeholder
+const isCheckoutModalOpen = ref(false);
 
-      try {
-        // Primeiro, cria o pedido
-        const enderecoPedido = 'Endereço de Entrega Fictício'; // Simplificado
-        const produtoIds = this.cartItems.map(item => item.idProduto);
+const checkoutForm = reactive({
+  enderecoPedido: '',
+  numeroCartao: '',
+});
 
-        const orderData = {
-          enderecoPedido: enderecoPedido,
-          produtoIds: produtoIds,
-        };
+onMounted(() => {
+  if (authStore.user?.endereco) {
+    checkoutForm.enderecoPedido = authStore.user.endereco;
+  }
+});
 
-        const orderResponse = await api.post('/pedidos', orderData);
-        const pedidoId = orderResponse.data.codigoPedido;
+const formatCurrency = (value) => {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+};
 
-        // Em seguida, processa o pagamento para o pedido recém-criado
-        const paymentData = {
-          codigoPedido: pedidoId,
-          metodoPagamento: this.paymentMethod,
-          valor: this.cartTotal,
-          numeroCartao: this.cardNumber, // Apenas para simulação
-        };
+const updateQuantity = (productId, quantity) => {
+  cartStore.updateQuantity(productId, quantity);
+};
 
-        const paymentResponse = await api.post('/pagamentos/processar', paymentData);
+const removeItem = (productId) => {
+  cartStore.removeItem(productId);
+  addNotification({ type: 'info', message: 'Item removido do carrinho.' });
+};
 
-        if (paymentResponse.data.status === 'APROVADO') {
-          this.orderSuccess = 'Pagamento aprovado e pedido finalizado com sucesso!';
-          localStorage.removeItem('cart');
-          this.loadCart();
-        } else {
-          this.paymentError = `Pagamento ${paymentResponse.data.status.toLowerCase()}. Tente novamente ou use outro cartão.`;
-        }
+const startCheckout = () => {
+  isCheckoutModalOpen.value = true;
+};
 
-      } catch (err) {
-        this.paymentError = 'Erro ao processar pagamento. Verifique os dados e tente novamente.';
-        this.orderError = 'Erro ao finalizar pedido. Tente novamente.';
-        console.error('Erro no pagamento/pedido:', err.response ? err.response.data : err);
-      }
-    },
-  },
+const handlePlaceOrder = async () => {
+  if (!checkoutForm.enderecoPedido || !checkoutForm.numeroCartao) {
+    addNotification({ type: 'warning', message: 'Por favor, preencha o endereço e os dados de pagamento.' });
+    return;
+  }
+
+  try {
+    await execute(async () => {
+      // 1. Create Order
+      const pedidoPayload = {
+        enderecoPedido: checkoutForm.enderecoPedido,
+        produtoIds: cartStore.items.map(item => item.idProduto),
+      };
+      const pedidoResponse = await api.post('/pedidos', pedidoPayload);
+      const novoPedido = pedidoResponse.data;
+
+      // 2. Process Payment
+      const pagamentoPayload = {
+        codigoPedido: novoPedido.codigoPedido,
+        numeroCartao: checkoutForm.numeroCartao,
+      };
+      await api.post('/pagamentos/processar', pagamentoPayload);
+
+      // 3. On Success
+      addNotification({ type: 'success', message: 'Pedido realizado com sucesso!' });
+      cartStore.clearCart();
+      isCheckoutModalOpen.value = false;
+      router.push('/orders');
+    });
+  } catch (error) {
+    // Global interceptor in api.js will show the error notification
+    console.error('Failed to place order:', error);
+  }
 };
 </script>
 
-<style scoped>
-/* Estilos específicos para a página do Carrinho */
+<style lang="scss" scoped>
+.cart-container {
+  padding: var(--spacing-lg) var(--spacing-md);
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.cart-header {
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+
+  h1 {
+    font-size: var(--font-size-h2);
+    margin-bottom: var(--spacing-xs);
+    color: var(--color-text-dark);
+  }
+
+  p {
+    font-size: var(--font-size-md);
+    color: var(--color-dark);
+  }
+}
+
+.cart-content {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--spacing-lg);
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cart-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.cart-summary {
+  position: sticky;
+  top: var(--spacing-lg);
+
+  .summary-card {
+    background-color: var(--color-background);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: var(--spacing-lg);
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: var(--spacing-sm);
+      font-size: var(--font-size-md);
+      color: var(--color-text-dark);
+
+      &.total {
+        font-size: var(--font-size-lg);
+        font-weight: var(--font-weight-bold);
+        color: var(--color-primary);
+        border-top: 1px solid var(--color-border);
+        padding-top: var(--spacing-sm);
+        margin-top: var(--spacing-md);
+      }
+    }
+  }
+}
+
+.checkout-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
 </style>

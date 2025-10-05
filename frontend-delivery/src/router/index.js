@@ -1,51 +1,51 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
+
+// Import views
 import AppHome from '../views/AppHome.vue';
 import AppLogin from '../views/AppLogin.vue';
 import AppRegister from '../views/AppRegister.vue';
-import AppProducts from '../views/AppProducts.vue';
 import AppCart from '../views/AppCart.vue';
+import AppOrders from '../views/AppOrders.vue';
+import AppProfile from '../views/AppProfile.vue';
 import RestaurantDashboard from '../views/RestaurantDashboard.vue';
-import DeliveryDashboard from '../views/DeliveryDashboard.vue'; // Importar o novo componente
+import DeliveryDashboard from '../views/DeliveryDashboard.vue';
 
 const routes = [
-  {
-    path: '/',
-    name: 'Home',
-    component: AppHome,
-  },
-  {
-    path: '/login',
-    name: 'Login',
-    component: AppLogin,
-  },
-  {
-    path: '/register',
-    name: 'Register',
-    component: AppRegister,
-  },
-  {
-    path: '/products',
-    name: 'Products',
-    component: AppProducts,
-  },
+  { path: '/', name: 'Home', component: AppHome },
+  { path: '/login', name: 'Login', component: AppLogin },
+  { path: '/register', name: 'Register', component: AppRegister },
   {
     path: '/cart',
     name: 'Cart',
     component: AppCart,
-    meta: { requiresAuth: true } // Rota protegida geral
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/orders',
+    name: 'Orders',
+    component: AppOrders,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: AppProfile,
+    meta: { requiresAuth: true }
   },
   {
     path: '/restaurant/dashboard',
     name: 'RestaurantDashboard',
     component: RestaurantDashboard,
-    meta: { requiresAuth: true, roles: ['RESTAURANT'] } // Rota protegida por role
+    meta: { requiresAuth: true, roles: ['RESTAURANT'] }
   },
   {
     path: '/delivery/dashboard',
     name: 'DeliveryDashboard',
     component: DeliveryDashboard,
-    meta: { requiresAuth: true, roles: ['DELIVERY'] } // Rota protegida por role
+    meta: { requiresAuth: true, roles: ['DELIVERY'] }
   },
+  // TODO: Add a '/unauthorized' page for users who lack required roles
 ];
 
 const router = createRouter({
@@ -53,34 +53,36 @@ const router = createRouter({
   routes,
 });
 
-// Navegação de guarda para rotas protegidas
-router.beforeEach((to, from, next) => {
-  const loggedIn = localStorage.getItem('authToken');
-  const user = JSON.parse(localStorage.getItem('user'));
+// Navigation Guard
+router.beforeEach(async (to, from, next) => {
+  const authStore = useAuthStore();
 
-  if (to.matched.some(record => record.meta.requiresAuth)) {
-    if (!loggedIn) {
-      // Redireciona para o login se a rota exige autenticação e não há token
-      return next('/login');
-    }
-
-    // Verifica as roles se a rota exigir
-    if (to.meta.roles) {
-      if (user && user.roles && to.meta.roles.some(role => user.roles.includes(role))) {
-        // Se o usuário tem a role necessária, permite o acesso
-        next();
-      } else {
-        // Se não tem a role, redireciona para uma página de acesso negado ou para a home
-        next('/'); // Ou para uma página '/unauthorized'
-      }
-    } else {
-      // Se a rota só exige autenticação, permite o acesso
-      next();
-    }
-  } else {
-    // Se a rota não exige autenticação, permite o acesso
-    next();
+  // Ensure the auth store is initialized before checking routes
+  if (!authStore.isInitialized) {
+    await authStore.initializeAuth();
   }
+
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+  const requiredRoles = to.meta.roles || [];
+  const isAuthenticated = authStore.isAuthenticated;
+
+  if (requiresAuth && !isAuthenticated) {
+    // Redirect to login if auth is required and user is not logged in
+    return next({ name: 'Login', query: { redirect: to.fullPath } });
+  }
+
+  if (isAuthenticated && requiredRoles.length > 0) {
+    const userRoles = authStore.userRoles;
+    // Check if user has at least one of the required roles
+    const hasRequiredRole = requiredRoles.some(role => userRoles.includes(role));
+    if (!hasRequiredRole) {
+      // Redirect to home or an 'unauthorized' page if user lacks the role
+      return next({ name: 'Home' }); // Or next('/unauthorized')
+    }
+  }
+
+  // If all checks pass, proceed
+  next();
 });
 
 export default router;

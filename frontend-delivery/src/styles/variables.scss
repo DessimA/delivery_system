@@ -1,0 +1,66 @@
+// styles/variables.scss
+:root {
+  // Colors
+  --color-primary: #FF6B35;
+  --color-primary-dark: #E55A2B;
+  --color-secondary: #4ECDC4;
+  --color-success: #28A745;
+  --color-danger: #DC3545;
+  --color-warning: #FFC107;
+  --color-info: #17A2B8;
+  --color-light: #F8F9FA;
+  --color-dark: #343A40;
+  --color-text-dark: #212529;
+  --color-text-light: #F8F9FA;
+  --color-background: #FFFFFF;
+  --color-surface: #F8F9FA;
+  --color-border: #DEE2E6;
+  
+  // Spacing
+  --spacing-xs: 0.25rem; // 4px
+  --spacing-sm: 0.5rem;  // 8px
+  --spacing-md: 1rem;    // 16px
+  --spacing-lg: 1.5rem;  // 24px
+  --spacing-xl: 2rem;    // 32px
+  --spacing-xxl: 3rem;   // 48px
+  
+  // Typography
+  --font-primary: 'Inter', sans-serif;
+  --font-size-xs: 0.75rem;  // 12px
+  --font-size-sm: 0.875rem; // 14px
+  --font-size-md: 1rem;     // 16px
+  --font-size-lg: 1.125rem; // 18px
+  --font-size-xl: 1.25rem;  // 20px
+  --font-size-h1: 2.5rem;   // 40px
+  --font-size-h2: 2rem;     // 32px
+  --font-size-h3: 1.75rem;  // 28px
+  --font-size-h4: 1.5rem;   // 24px
+  --font-size-h5: 1.25rem;  // 20px
+  --font-size-h6: 1rem;     // 16px
+  
+  // Line heights
+  --line-height-heading: 1.2;
+  --line-height-body: 1.5;
+  
+  // Font weights
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  // Shadows
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+  
+  // Border radius
+  --radius-sm: 0.25rem; // 4px
+  --radius-md: 0.5rem;  // 8px
+  --radius-lg: 0.75rem; // 12px
+  --radius-full: 9999px;
+  
+  // Transitions
+  --transition-fast: 0.15s ease-in-out;
+  --transition-normal: 0.3s ease-in-out;
+}

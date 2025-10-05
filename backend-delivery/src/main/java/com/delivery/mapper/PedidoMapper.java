@@ -2,7 +2,6 @@ package com.delivery.mapper;
 
 import com.delivery.dto.PedidoResponseDTO;
 import com.delivery.model.Pedido;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.stream.Collectors;
@@ -10,8 +9,11 @@ import java.util.stream.Collectors;
 @Component
 public class PedidoMapper {
 
-    @Autowired
-    private ProdutoMapper produtoMapper;
+    private final ProdutoMapper produtoMapper;
+
+    public PedidoMapper(ProdutoMapper produtoMapper) {
+        this.produtoMapper = produtoMapper;
+    }
 
     public PedidoResponseDTO toResponseDTO(Pedido pedido) {
         PedidoResponseDTO dto = new PedidoResponseDTO();
@@ -19,6 +21,9 @@ public class PedidoMapper {
         dto.setCodigoCliente(pedido.getCodigoCliente());
         dto.setEnderecoPedido(pedido.getEnderecoPedido());
         dto.setValorTotal(pedido.getValorTotal());
+        dto.setStatus(pedido.getStatus());
+        dto.setDataPedido(pedido.getDataPedido());
+        
         if (pedido.getProdutos() != null) {
             dto.setProdutos(pedido.getProdutos().stream()
                     .map(produtoMapper::toResponseDTO)
