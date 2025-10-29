@@ -6,9 +6,6 @@
         :alt="product.nomeProduto"
         @error="handleImageError"
       />
-      <div class="product-badge" v-if="product.promocao">
-        <span>-{{ product.desconto }}%</span>
-      </div>
     </div>
 
     <div class="product-info">
@@ -18,12 +15,10 @@
       <div class="product-footer">
         <div class="product-price">
           <span class="current-price">{{ formatCurrency(product.preco) }}</span>
-          <span v-if="product.precoOriginal" class="original-price">
-            {{ formatCurrency(product.precoOriginal) }}
-          </span>
         </div>
 
         <BaseButton
+          label="Adicionar"
           variant="primary"
           size="sm"
           icon="plus"
@@ -71,45 +66,36 @@ const viewProduct = () => {
 
 <style lang="scss" scoped>
 .product-card {
-  background-color: var(--color-background);
+  background-color: var(--color-surface);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 
   &:hover {
-    transform: translateY(-5px);
+    transform: translateY(-4px);
     box-shadow: var(--shadow-md);
   }
 }
 
 .product-image {
-  position: relative;
   width: 100%;
-  height: 180px; /* Fixed height for images */
+  height: 180px;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--color-surface);
 
   img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    transition: transform 0.3s ease;
   }
 
-  .product-badge {
-    position: absolute;
-    top: var(--spacing-sm);
-    left: var(--spacing-sm);
-    background-color: var(--color-danger);
-    color: var(--color-text-light);
-    padding: var(--spacing-xs) var(--spacing-sm);
-    border-radius: var(--radius-md);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
+  .product-card:hover & img {
+    transform: scale(1.05);
   }
 }
 
@@ -121,6 +107,7 @@ const viewProduct = () => {
 }
 
 .product-name {
+  font-family: var(--font-headings);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
   margin-bottom: var(--spacing-xs);
@@ -129,37 +116,25 @@ const viewProduct = () => {
 
 .product-description {
   font-size: var(--font-size-sm);
-  color: var(--color-dark);
+  color: var(--color-text-muted);
   margin-bottom: var(--spacing-md);
   flex-grow: 1;
-  display: -webkit-box;
-  -webkit-line-clamp: 2; /* Limit to 2 lines */
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.4;
 }
 
 .product-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: var(--spacing-sm);
+  margin-top: auto; /* Pushes footer to the bottom */
+  padding-top: var(--spacing-sm);
 }
 
 .product-price {
-  display: flex;
-  flex-direction: column;
-
   .current-price {
     font-size: var(--font-size-xl);
     font-weight: var(--font-weight-bold);
-    color: var(--color-primary);
-  }
-
-  .original-price {
-    font-size: var(--font-size-sm);
-    color: var(--color-dark);
-    text-decoration: line-through;
+    color: var(--color-text-dark);
   }
 }
 </style>

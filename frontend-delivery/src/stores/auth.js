@@ -10,6 +10,7 @@ export const useAuthStore = defineStore('auth', {
 
   getters: {
     isAuthenticated: (state) => !!state.user,
+    isLoggedIn: (state) => !!state.user, // Alias for isAuthenticated
     userRoles: (state) => state.user?.roles?.map(role => role.authority) || [],
     
     // Role checks

@@ -1,54 +1,96 @@
 <template>
   <div class="dashboard-container">
-    <div class="dashboard-header">
+    <header class="dashboard-header">
       <h1>Meu Cardápio</h1>
-      <BaseButton @click="showProductModal()">Adicionar Produto</BaseButton>
-    </div>
+      <BaseButton label="Adicionar Produto" icon="plus" @click="openProductModal(null)" />
+    </header>
 
     <div v-if="loading" class="loading-state">
+      <LoadingSpinner />
       <p>Carregando produtos...</p>
     </div>
 
-    <div v-else-if="products.length > 0" class="products-list">
-      <div class="list-header">
-        <span>Produto</span>
-        <span>Preço</span>
-        <span>Ações</span>
-      </div>
-      <div v-for="product in products" :key="product.idProduto" class="product-item">
-        <span class="product-name">{{ product.nomeProduto }}</span>
-        <span class="product-price">{{ formatCurrency(product.preco) }}</span>
-        <div class="actions">
-          <BaseButton size="sm" variant="secondary" @click="showProductModal(product)">Editar</BaseButton>
-          <BaseButton size="sm" variant="danger" @click="handleDeleteProduct(product.idProduto)">Excluir</BaseButton>
-        </div>
-      </div>
+    <div v-else-if="products.length > 0" class="products-table-container">
+      <table class="products-table">
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Preço</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="product in products" :key="product.idProduto">
+            <td>
+              <div class="product-info">
+                <img :src="product.caminhoImagem || '/images/placeholder-food.svg'" alt="Imagem do produto" class="product-image">
+                <div>
+                  <div class="product-name">{{ product.nomeProduto }}</div>
+                  <div class="product-description">{{ product.descricao }}</div>
+                </div>
+              </div>
+            </td>
+            <td>{{ formatCurrency(product.preco) }}</td>
+            <td>
+              <div class="action-buttons">
+                <BaseButton variant="secondary" size="sm" icon="edit-2" @click="openProductModal(product)" />
+                <BaseButton variant="danger" size="sm" icon="trash-2" @click="openDeleteModal(product)" />
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
     
-    <EmptyState v-else title="Nenhum produto encontrado" description="Comece adicionando produtos ao seu cardápio." />
+    <EmptyState
+      v-else
+      title="Nenhum produto encontrado"
+      description="Comece adicionando produtos ao seu cardápio."
+    />
 
     <!-- Modal para Adicionar/Editar Produto -->
-    <BaseModal v-model="isModalOpen" :title="modalTitle" @close="isModalOpen = false">
-      <form @submit.prevent="handleSubmitProduct" class="product-form">
-        <BaseInput v-model="currentProduct.nomeProduto" label="Nome do Produto" required />
-        <BaseInput v-model="currentProduct.descricao" label="Descrição" required />
-        <BaseInput v-model="currentProduct.preco" label="Preço" type="number" step="0.01" required />
-        
-        <!-- TODO: Implementar a lógica de upload de arquivo e envio como multipart/form-data -->
-        <label for="productImage">Imagem do Produto</label>
-        <input type="file" @change="handleFileSelect" id="productImage" accept="image/*" />
+    <ProductFormModal
+      :visible="isProductModalVisible"
+      :product="selectedProduct"
+      :saving="saving"
+      @close="closeProductModal"
+      @save="handleProductSave"
+    />
 
-      </form>
+    <!-- Modal de Confirmação de Exclusão -->
+    <BaseModal :visible="isDeleteModalVisible" @close="closeDeleteModal" title="Confirmar Exclusão">
+      <p>Você tem certeza que deseja remover o produto "<strong>{{ selectedProduct?.nomeProduto }}</strong>"? Esta ação não pode ser desfeita.</p>
       <template #footer>
-        <BaseButton variant="secondary" @click="isModalOpen = false">Cancelar</BaseButton>
-        <BaseButton type="submit" @click="handleSubmitProduct" :loading="isSubmitting">Salvar</BaseButton>
+        <BaseButton variant="secondary" label="Cancelar" @click="closeDeleteModal" />
+        <BaseButton variant="danger" label="Sim, Excluir" @click="deleteProduct" :loading="deleting" />
       </template>
     </BaseModal>
+
+    <section class="order-management">
+      <div class="section-header">
+        <h2>Pedidos do Restaurante</h2>
+      </div>
+
+      <div v-if="loadingOrders" class="loading-state">
+        <LoadingSpinner />
+        <p>Carregando pedidos...</p>
+      </div>
+
+      <div v-else-if="orders.length > 0" class="orders-list">
+        <OrderCard v-for="order in orders" :key="order.id" :order="order" @update-status="updateOrderStatus" />
+      </div>
+
+      <EmptyState
+        v-else
+        title="Nenhum pedido recebido"
+        description="Aguardando novos pedidos para o seu restaurante."
+      />
+    </section>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed, reactive } from 'vue';
+import { ref, onMounted } from 'vue';
 import api from '@/api';
 import { useApi } from '@/composables/useApi';
 import { useNotifications } from '@/composables/useNotifications';
@@ -57,108 +99,121 @@ import BaseButton from '@/components/base/BaseButton.vue';
 import BaseInput from '@/components/base/BaseInput.vue';
 import BaseModal from '@/components/base/BaseModal.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
+import LoadingSpinner from '@/components/base/LoadingSpinner.vue';
+import ProductFormModal from '@/components/ProductFormModal.vue';
+import OrderCard from '@/components/order/OrderCard.vue'; // Componente OrderCard será usado
 
 const products = ref([]);
-const isModalOpen = ref(false);
-const isEditing = ref(false);
-const imageFile = ref(null);
+const orders = ref([]);
+const isProductModalVisible = ref(false);
+const isDeleteModalVisible = ref(false);
+const selectedProduct = ref(null);
+const saving = ref(false);
+const deleting = ref(false);
 
-const currentProduct = reactive({
-  idProduto: null,
-  nomeProduto: '',
-  descricao: '',
-  preco: 0,
-});
-
-const { loading, execute: fetchProductsExecute } = useApi();
-const { loading: isSubmitting, execute: submitExecute } = useApi();
+const { loading, execute: executeApi } = useApi();
+const { loading: loadingOrders, execute: executeOrdersApi } = useApi();
 const { addNotification } = useNotifications();
 
-const modalTitle = computed(() => isEditing.value ? 'Editar Produto' : 'Adicionar Produto');
+onMounted(() => {
+  fetchProducts();
+  fetchOrders();
+});
 
-onMounted(fetchProducts);
-
-async function fetchProducts() {
+const fetchProducts = async () => {
   try {
-    const response = await fetchProductsExecute(() => api.get('/restaurante/me/produtos'));
+    const response = await executeApi(() => api.get('/restaurante/me/produtos'));
     products.value = response.data;
-  } catch (err) {
-    console.error('Failed to fetch products:', err);
+  } catch (error) {
+    addNotification({ type: 'error', message: 'Falha ao carregar produtos do restaurante.' });
   }
-}
+};
 
-function showProductModal(product = null) {
-  imageFile.value = null;
-  if (product) {
-    isEditing.value = true;
-    Object.assign(currentProduct, product);
-  } else {
-    isEditing.value = false;
-    Object.assign(currentProduct, { idProduto: null, nomeProduto: '', descricao: '', preco: 0 });
-  }
-  isModalOpen.value = true;
-}
-
-function handleFileSelect(event) {
-  imageFile.value = event.target.files[0];
-}
-
-async function handleSubmitProduct() {
-  const productData = {
-    nomeProduto: currentProduct.nomeProduto,
-    descricao: currentProduct.descricao,
-    preco: currentProduct.preco,
-  };
-
-  // O backend espera multipart/form-data para criar, mas JSON para editar.
-  // Esta é uma limitação do backend que precisa ser tratada.
+const fetchOrders = async () => {
   try {
-    if (isEditing.value) {
-      // PUT request com JSON, pois o backend não suporta multipart/form-data para PUT.
-      await submitExecute(() => api.put(`/produtos/${currentProduct.idProduto}`, productData));
-      addNotification({ type: 'success', message: 'Produto atualizado com sucesso!' });
-    } else {
-      // POST request com multipart/form-data
-      const formData = new FormData();
-      formData.append('produto', new Blob([JSON.stringify(productData)], { type: 'application/json' }));
-      if (imageFile.value) {
-        formData.append('imagem', imageFile.value);
-      }
-      await submitExecute(() => api.post('/produtos', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      }));
-      addNotification({ type: 'success', message: 'Produto criado com sucesso!' });
-    }
-    isModalOpen.value = false;
-    fetchProducts(); // Recarrega a lista
-  } catch (err) {
-    console.error('Failed to submit product:', err);
+    const response = await executeOrdersApi(() => api.get('/restaurante/me/pedidos'));
+    orders.value = response.data;
+  } catch (error) {
+    addNotification({ type: 'error', message: 'Falha ao carregar pedidos do restaurante.' });
   }
-}
-
-async function handleDeleteProduct(productId) {
-  if (confirm('Tem certeza que deseja excluir este produto?')) {
-    try {
-      await submitExecute(() => api.delete(`/produtos/${productId}`));
-      addNotification({ type: 'success', message: 'Produto excluído com sucesso!' });
-      fetchProducts(); // Recarrega a lista
-    } catch (err) {
-      console.error('Failed to delete product:', err);
-    }
-  }
-}
+};
 
 const formatCurrency = (value) => {
-  if (typeof value !== 'number') return 'R$ 0,00';
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+};
+
+const openProductModal = (product) => {
+  selectedProduct.value = product ? { ...product } : null;
+  isProductModalVisible.value = true;
+};
+
+const closeProductModal = () => {
+  isProductModalVisible.value = false;
+  selectedProduct.value = null;
+};
+
+const openDeleteModal = (product) => {
+  selectedProduct.value = product;
+  isDeleteModalVisible.value = true;
+};
+
+const closeDeleteModal = () => {
+  isDeleteModalVisible.value = false;
+  selectedProduct.value = null;
+};
+
+const handleProductSave = async (productData) => {
+  saving.value = true;
+  try {
+    if (productData.idProduto) {
+      // Update existing product
+      await executeApi(() => api.put(`/produtos/${productData.idProduto}`, productData));
+      addNotification({ type: 'success', message: 'Produto atualizado com sucesso!' });
+    } else {
+      // Create new product
+      await executeApi(() => api.post('/produtos', productData));
+      addNotification({ type: 'success', message: 'Produto adicionado com sucesso!' });
+    }
+    closeProductModal();
+    fetchProducts(); // Recarrega a lista
+  } catch (error) {
+    addNotification({ type: 'error', message: 'Falha ao salvar produto.' });
+  } finally {
+    saving.value = false;
+  }
+};
+
+const deleteProduct = async () => {
+  if (!selectedProduct.value) return;
+  deleting.value = true;
+  try {
+    await executeApi(() => api.delete(`/produtos/${selectedProduct.value.idProduto}`));
+    addNotification({ type: 'success', message: 'Produto removido com sucesso!' });
+    closeDeleteModal();
+    fetchProducts(); // Recarrega a lista
+  } catch (error) {
+    addNotification({ type: 'error', message: 'Falha ao remover produto.' });
+  } finally {
+    deleting.value = false;
+  }
+};
+
+const updateOrderStatus = async (orderId, newStatus) => {
+  try {
+    await executeOrdersApi(() => api.put(`/pedidos/${orderId}/status`, { status: newStatus }));
+    addNotification({ type: 'success', message: `Status do pedido ${orderId} atualizado para ${newStatus}!` });
+    fetchOrders(); // Recarrega a lista de pedidos
+  } catch (error) {
+    addNotification({ type: 'error', message: 'Falha ao atualizar status do pedido.' });
+  }
 };
 </script>
 
 <style lang="scss" scoped>
 .dashboard-container {
-  padding: var(--spacing-lg) var(--spacing-md);
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 0 auto;
+  padding: var(--spacing-xl);
 }
 
 .dashboard-header {
@@ -166,48 +221,105 @@ const formatCurrency = (value) => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: var(--spacing-xl);
-}
 
-.products-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-}
-
-.list-header, .product-item {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
-  gap: var(--spacing-md);
-  align-items: center;
-  padding: var(--spacing-sm) var(--spacing-md);
-}
-
-.list-header {
-  font-weight: var(--font-weight-bold);
-  color: var(--color-dark);
-  border-bottom: 2px solid var(--color-border);
-}
-
-.product-item {
-  background-color: var(--color-background);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.2s ease;
-
-  &:hover {
-    box-shadow: var(--shadow-md);
+  h1 {
+    font-family: var(--font-headings);
+    font-size: var(--font-size-h2);
+    margin-bottom: var(--spacing-sm);
   }
 }
 
-.actions {
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  margin-top: var(--spacing-xxl);
+
+  h2 {
+    font-family: var(--font-headings);
+    font-size: var(--font-size-h3);
+    margin: 0;
+  }
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xxl) 0;
+  color: var(--color-text-muted);
+}
+
+.products-table-container,
+.orders-list {
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.products-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th, td {
+    padding: var(--spacing-md);
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  th {
+    background-color: var(--color-background);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    text-transform: uppercase;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  tbody tr:hover {
+    background-color: var(--color-background);
+  }
+}
+
+.product-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.product-image {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+}
+
+.product-name {
+  font-weight: var(--font-weight-semibold);
+}
+
+.product-description {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.action-buttons {
   display: flex;
   gap: var(--spacing-sm);
   justify-content: flex-end;
 }
 
-.product-form {
+.orders-list {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
+  padding: var(--spacing-md);
 }
 </style>

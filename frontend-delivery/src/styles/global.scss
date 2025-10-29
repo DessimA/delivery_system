@@ -1,6 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-@import './variables.scss';
+@use './variables.scss' as *;
 
 /* Reset básico e estilos globais */
 * {
@@ -20,7 +18,8 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-primary);
+  font-family: var(--font-headings);
+  font-weight: var(--font-weight-bold);
   line-height: var(--line-height-heading);
   margin-bottom: var(--spacing-md);
   color: var(--color-text-dark);
@@ -70,6 +69,7 @@ input, textarea, select {
 .text-secondary { color: var(--color-secondary); }
 .text-success { color: var(--color-success); }
 .text-danger { color: var(--color-danger); }
+.text-muted { color: var(--color-text-muted); }
 
 .mb-xs { margin-bottom: var(--spacing-xs); }
 .mb-sm { margin-bottom: var(--spacing-sm); }
@@ -87,4 +87,39 @@ input, textarea, select {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 var(--spacing-md);
+}
+
+/* Animações suaves */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Scrollbar customizada */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-md);
+  
+  &:hover {
+    background: var(--color-text-muted);
+  }
 }

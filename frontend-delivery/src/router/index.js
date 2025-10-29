@@ -10,6 +10,7 @@ import AppOrders from '../views/AppOrders.vue';
 import AppProfile from '../views/AppProfile.vue';
 import RestaurantDashboard from '../views/RestaurantDashboard.vue';
 import DeliveryDashboard from '../views/DeliveryDashboard.vue';
+import AdminDashboard from '../views/AdminDashboard.vue';
 
 const routes = [
   { path: '/', name: 'Home', component: AppHome },
@@ -44,6 +45,12 @@ const routes = [
     name: 'DeliveryDashboard',
     component: DeliveryDashboard,
     meta: { requiresAuth: true, roles: ['DELIVERY'] }
+  },
+  {
+    path: '/admin/dashboard',
+    name: 'AdminDashboard',
+    component: AdminDashboard,
+    meta: { requiresAuth: true, roles: ['ADMIN'] }
   },
   // TODO: Add a '/unauthorized' page for users who lack required roles
 ];

@@ -132,39 +132,42 @@ const handleLogin = async () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: calc(100vh - var(--spacing-xxl)); /* Adjust for navbar/footer if present */
-  background-color: var(--color-surface);
-  padding: var(--spacing-lg);
+  min-height: calc(100vh - 200px);
+  background: linear-gradient(135deg, var(--color-surface) 0%, #e8ecf1 100%);
+  padding: var(--spacing-xl);
 }
 
 .auth-card {
   background-color: var(--color-background);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  padding: var(--spacing-xl);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: var(--spacing-xxl);
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
   text-align: center;
+  border: 1px solid var(--color-border);
 }
 
 .auth-header {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
 
   .auth-logo {
     width: 80px;
     height: 80px;
     margin-bottom: var(--spacing-md);
+    filter: drop-shadow(0 2px 4px rgba(255, 107, 53, 0.3));
   }
 
   h1 {
     font-size: var(--font-size-h3);
     color: var(--color-text-dark);
-    margin-bottom: var(--spacing-xs);
+    margin-bottom: var(--spacing-sm);
+    font-weight: var(--font-weight-bold);
   }
 
   p {
     font-size: var(--font-size-md);
-    color: var(--color-dark);
+    color: var(--color-text-muted);
   }
 }
 
@@ -177,14 +180,17 @@ const handleLogin = async () => {
 
 .auth-footer {
   font-size: var(--font-size-sm);
-  color: var(--color-dark);
+  color: var(--color-text-muted);
+  margin-top: var(--spacing-md);
 
   a {
     color: var(--color-primary);
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--font-weight-semibold);
     text-decoration: none;
+    transition: color 0.2s ease;
 
     &:hover {
+      color: var(--color-primary-dark);
       text-decoration: underline;
     }
   }

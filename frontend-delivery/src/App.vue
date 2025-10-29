@@ -16,25 +16,8 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
 import AppNavbar from './components/AppNavbar.vue';
 import NotificationDisplay from './components/layout/NotificationDisplay.vue';
-import { useAuthStore } from './stores/auth';
-import { useWebSocket } from './composables/useWebSocket';
-
-const authStore = useAuthStore();
-const { connect } = useWebSocket();
-
-onMounted(() => {
-  // Initialize auth state from localStorage on app load
-  authStore.initializeAuth();
-
-  // The watcher inside useWebSocket will automatically connect if/when authenticated.
-  // We can trigger an initial connect attempt here if needed.
-  if (authStore.isAuthenticated) {
-      connect();
-  }
-});
 </script>
 
 <style lang="scss">
@@ -58,15 +41,21 @@ html, body {
 }
 
 .app-footer {
-  background-color: var(--color-dark);
+  background: linear-gradient(135deg, var(--color-dark) 0%, #1a252f 100%);
   color: var(--color-text-light);
-  padding: var(--spacing-md) 0;
+  padding: var(--spacing-xl) 0;
   margin-top: auto;
+  border-top: 3px solid var(--color-primary);
 
   .container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 var(--spacing-md);
+  }
+
+  .text-muted {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: var(--font-size-sm);
   }
 }
 </style>

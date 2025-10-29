@@ -24,7 +24,7 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits, watch } from 'vue';
+import { watch } from 'vue';
 import BaseIcon from './BaseIcon.vue';
 
 const props = defineProps({
