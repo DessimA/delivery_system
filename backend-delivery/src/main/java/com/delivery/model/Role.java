@@ -14,7 +14,7 @@ public class Role implements GrantedAuthority {
     private String papel;
 
     @ManyToMany(mappedBy = "roles")
-    private List<Pessoa> pessoas;
+    private List<Usuario> usuarios;
 
     @Override
     public String getAuthority() {
@@ -31,11 +31,11 @@ public class Role implements GrantedAuthority {
         this.papel = papel;
     }
 
-    public List<Pessoa> getPessoas() {
-        return pessoas;
+    public List<Usuario> getUsuarios() {
+        return usuarios;
     }
 
-    public void setPessoas(List<Pessoa> pessoas) {
-        this.pessoas = pessoas;
+    public void setUsuarios(List<Usuario> usuarios) {
+        this.usuarios = usuarios;
     }
 }

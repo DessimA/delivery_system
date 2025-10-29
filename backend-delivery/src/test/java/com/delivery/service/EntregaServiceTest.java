@@ -4,11 +4,11 @@ import com.delivery.dto.EntregaRequestDTO;
 import com.delivery.dto.EntregaResponseDTO;
 import com.delivery.model.Entrega;
 import com.delivery.model.Pedido;
-import com.delivery.model.Pessoa;
+import com.delivery.model.Usuario;
 import com.delivery.model.Role;
 import com.delivery.repository.EntregaRepository;
 import com.delivery.repository.PedidoRepository;
-import com.delivery.repository.PessoaRepository;
+import com.delivery.repository.UsuarioRepository;
 import com.delivery.mapper.EntregaMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,22 +16,24 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class EntregaServiceTest {
 
     @Mock
@@ -41,7 +43,7 @@ public class EntregaServiceTest {
     private PedidoRepository pedidoRepository;
 
     @Mock
-    private PessoaRepository pessoaRepository;
+    private UsuarioRepository usuarioRepository;
 
     @Mock
     private EntregaMapper entregaMapper;
@@ -49,32 +51,25 @@ public class EntregaServiceTest {
     @InjectMocks
     private EntregaService entregaService;
 
-    private Pessoa adminUser;
-    private Pessoa deliveryUser;
+    private Usuario adminUser;
+    private Usuario deliveryUser;
     private Pedido pedido;
     private Entrega entregaPendente;
     private EntregaRequestDTO entregaRequestDTO;
 
     @BeforeEach
     void setUp() {
-        // Mock SecurityContextHolder
-        Authentication authentication = mock(Authentication.class);
-        SecurityContext securityContext = mock(SecurityContext.class);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        SecurityContextHolder.setContext(securityContext);
-
-        // Setup common test data
-        adminUser = new Pessoa();
+        adminUser = new Usuario();
         adminUser.setEmail("admin@test.com");
         Role adminRole = new Role();
-        adminRole.setPapel("ADMIN");
+        adminRole.setPapel("ROLE_ADMIN");
         adminUser.setRoles(Collections.singletonList(adminRole));
 
-        deliveryUser = new Pessoa();
+        deliveryUser = new Usuario();
         deliveryUser.setEmail("delivery@test.com");
         deliveryUser.setCodigo(2L);
         Role deliveryRole = new Role();
-        deliveryRole.setPapel("DELIVERY");
+        deliveryRole.setPapel("ROLE_DELIVERY");
         deliveryUser.setRoles(Collections.singletonList(deliveryRole));
 
         pedido = new Pedido();
@@ -95,7 +90,7 @@ public class EntregaServiceTest {
         when(pedidoRepository.findById(anyLong())).thenReturn(Optional.of(pedido));
         when(entregaMapper.toEntity(any(EntregaRequestDTO.class))).thenReturn(new Entrega());
         when(entregaRepository.save(any(Entrega.class))).thenReturn(entregaPendente);
-        when(entregaMapper.toResponseDTO(any(Entrega.class))).thenReturn(null); // Not testing DTO conversion here
+        when(entregaMapper.toResponseDTO(any(Entrega.class))).thenReturn(new EntregaResponseDTO());
 
         entregaService.criarEntrega(entregaRequestDTO);
 
@@ -129,7 +124,7 @@ public class EntregaServiceTest {
         entregaAceita.setEntregador(deliveryUser);
 
         when(entregaRepository.findAll()).thenReturn(Arrays.asList(entregaPendente, entregaAceita));
-        when(entregaMapper.toResponseDTO(any(Entrega.class))).thenReturn(null);
+        when(entregaMapper.toResponseDTO(any(Entrega.class))).thenReturn(new EntregaResponseDTO());
 
         List<EntregaResponseDTO> result = entregaService.listarEntregasDisponiveis();
 
@@ -139,12 +134,17 @@ public class EntregaServiceTest {
 
     @Test
     void aceitarEntrega_shouldAssignDeliveryToDeliveryUser() {
-        when(SecurityContextHolder.getContext().getAuthentication().getPrincipal()).thenReturn(mock(UserDetails.class));
-        when(((UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUsername()).thenReturn(deliveryUser.getEmail());
-        when(pessoaRepository.findByEmail(deliveryUser.getEmail())).thenReturn(deliveryUser);
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getName()).thenReturn(deliveryUser.getEmail());
+        when(authentication.getAuthorities()).thenReturn((java.util.Collection) deliveryUser.getRoles());
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        when(usuarioRepository.findByEmail(deliveryUser.getEmail())).thenReturn(deliveryUser);
         when(entregaRepository.findById(anyLong())).thenReturn(Optional.of(entregaPendente));
         when(entregaRepository.save(any(Entrega.class))).thenReturn(entregaPendente);
-        when(entregaMapper.toResponseDTO(any(Entrega.class))).thenReturn(null);
+        when(entregaMapper.toResponseDTO(any(Entrega.class))).thenReturn(new EntregaResponseDTO());
 
         entregaService.aceitarEntrega(1L);
 
@@ -174,10 +174,15 @@ public class EntregaServiceTest {
 
     @Test
     void aceitarEntrega_shouldThrowExceptionIfUserNotDeliveryRole() {
-        when(SecurityContextHolder.getContext().getAuthentication().getPrincipal()).thenReturn(mock(UserDetails.class));
-        when(((UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUsername()).thenReturn(adminUser.getEmail());
-        when(pessoaRepository.findByEmail(adminUser.getEmail())).thenReturn(adminUser);
-        when(entregaRepository.findById(anyLong())).thenReturn(Optional.of(entregaPendente));
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getName()).thenReturn(adminUser.getEmail());
+        when(authentication.getAuthorities()).thenReturn((java.util.Collection) adminUser.getRoles());
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        when(usuarioRepository.findByEmail(adminUser.getEmail())).thenReturn(adminUser);
+        when(entregaRepository.findById(anyLong())).thenReturn(Optional.of(entregaPendente)); // Stubbing for aceitarEntrega
 
         assertThrows(SecurityException.class, () ->
                 entregaService.aceitarEntrega(1L)
@@ -191,12 +196,17 @@ public class EntregaServiceTest {
         entregaAceita.setStatus("ACEITA");
         entregaAceita.setEntregador(deliveryUser);
 
-        when(SecurityContextHolder.getContext().getAuthentication().getPrincipal()).thenReturn(mock(UserDetails.class));
-        when(((UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUsername()).thenReturn(adminUser.getEmail());
-        when(pessoaRepository.findByEmail(adminUser.getEmail())).thenReturn(adminUser);
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getName()).thenReturn(adminUser.getEmail());
+        when(authentication.getAuthorities()).thenReturn((java.util.Collection) adminUser.getRoles());
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        when(usuarioRepository.findByEmail(adminUser.getEmail())).thenReturn(adminUser);
         when(entregaRepository.findById(anyLong())).thenReturn(Optional.of(entregaAceita));
         when(entregaRepository.save(any(Entrega.class))).thenReturn(entregaAceita);
-        when(entregaMapper.toResponseDTO(any(Entrega.class))).thenReturn(null);
+        when(entregaMapper.toResponseDTO(any(Entrega.class))).thenReturn(new EntregaResponseDTO());
 
         entregaService.atualizarStatusEntrega(1L, "EM_ROTA");
 
@@ -212,12 +222,17 @@ public class EntregaServiceTest {
         entregaAceita.setStatus("ACEITA");
         entregaAceita.setEntregador(deliveryUser);
 
-        when(SecurityContextHolder.getContext().getAuthentication().getPrincipal()).thenReturn(mock(UserDetails.class));
-        when(((UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUsername()).thenReturn(deliveryUser.getEmail());
-        when(pessoaRepository.findByEmail(deliveryUser.getEmail())).thenReturn(deliveryUser);
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getName()).thenReturn(deliveryUser.getEmail());
+        when(authentication.getAuthorities()).thenReturn((java.util.Collection) deliveryUser.getRoles());
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        when(usuarioRepository.findByEmail(deliveryUser.getEmail())).thenReturn(deliveryUser);
         when(entregaRepository.findById(anyLong())).thenReturn(Optional.of(entregaAceita));
         when(entregaRepository.save(any(Entrega.class))).thenReturn(entregaAceita);
-        when(entregaMapper.toResponseDTO(any(Entrega.class))).thenReturn(null);
+        when(entregaMapper.toResponseDTO(any(Entrega.class))).thenReturn(new EntregaResponseDTO());
 
         entregaService.atualizarStatusEntrega(1L, "EM_ROTA");
 
@@ -231,17 +246,22 @@ public class EntregaServiceTest {
         Entrega entregaAceita = new Entrega();
         entregaAceita.setId(1L);
         entregaAceita.setStatus("ACEITA");
-        Pessoa otherDeliveryUser = new Pessoa();
+        Usuario otherDeliveryUser = new Usuario();
         otherDeliveryUser.setEmail("other@test.com");
         otherDeliveryUser.setCodigo(3L);
         Role deliveryRole = new Role();
-        deliveryRole.setPapel("DELIVERY");
+        deliveryRole.setPapel("ROLE_DELIVERY");
         otherDeliveryUser.setRoles(Collections.singletonList(deliveryRole));
         entregaAceita.setEntregador(otherDeliveryUser);
 
-        when(SecurityContextHolder.getContext().getAuthentication().getPrincipal()).thenReturn(mock(UserDetails.class));
-        when(((UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUsername()).thenReturn(deliveryUser.getEmail());
-        when(pessoaRepository.findByEmail(deliveryUser.getEmail())).thenReturn(deliveryUser);
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getName()).thenReturn(deliveryUser.getEmail());
+        when(authentication.getAuthorities()).thenReturn((java.util.Collection) deliveryUser.getRoles());
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        when(usuarioRepository.findByEmail(deliveryUser.getEmail())).thenReturn(deliveryUser);
         when(entregaRepository.findById(anyLong())).thenReturn(Optional.of(entregaAceita));
 
         assertThrows(SecurityException.class, () ->
@@ -262,11 +282,16 @@ public class EntregaServiceTest {
         outraEntrega.setEntregador(adminUser);
         outraEntrega.setStatus("ACEITA");
 
-        when(SecurityContextHolder.getContext().getAuthentication().getPrincipal()).thenReturn(mock(UserDetails.class));
-        when(((UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUsername()).thenReturn(deliveryUser.getEmail());
-        when(pessoaRepository.findByEmail(deliveryUser.getEmail())).thenReturn(deliveryUser);
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getName()).thenReturn(deliveryUser.getEmail());
+        when(authentication.getAuthorities()).thenReturn((java.util.Collection) deliveryUser.getRoles());
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        when(usuarioRepository.findByEmail(deliveryUser.getEmail())).thenReturn(deliveryUser);
         when(entregaRepository.findByEntregador(deliveryUser)).thenReturn(Collections.singletonList(minhaEntrega));
-        when(entregaMapper.toResponseDTO(any(Entrega.class))).thenReturn(null);
+        when(entregaMapper.toResponseDTO(any(Entrega.class))).thenReturn(new EntregaResponseDTO());
 
         List<EntregaResponseDTO> result = entregaService.listarMinhasEntregas();
 

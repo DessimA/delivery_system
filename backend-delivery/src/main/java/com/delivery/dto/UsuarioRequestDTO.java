@@ -1,11 +1,12 @@
 package com.delivery.dto;
 
+import java.time.LocalDate;
 import java.util.Date;
 
 public class UsuarioRequestDTO {
     private String nome;
     private String cpf;
-    private Date dataNascimento;
+    private LocalDate dataNascimento;
     private String endereco;
     private String email;
     private String senha;
@@ -27,11 +28,11 @@ public class UsuarioRequestDTO {
         this.cpf = cpf;
     }
 
-    public Date getDataNascimento() {
+    public LocalDate getDataNascimento() {
         return dataNascimento;
     }
 
-    public void setDataNascimento(Date dataNascimento) {
+    public void setDataNascimento(LocalDate dataNascimento) {
         this.dataNascimento = dataNascimento;
     }
 

@@ -2,9 +2,9 @@ package com.delivery.controller;
 
 import com.delivery.dto.PedidoRequestDTO;
 import com.delivery.dto.PedidoResponseDTO;
-import com.delivery.model.Pessoa;
+import com.delivery.model.Usuario;
 import com.delivery.service.PedidoService;
-import com.delivery.service.PessoaService;
+import com.delivery.service.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,26 +23,26 @@ import java.util.List;
 public class PedidoController {
 
     private final PedidoService pedidoService;
-    private final PessoaService pessoaService;
+    private final UsuarioService usuarioService;
 
-    public PedidoController(PedidoService pedidoService, PessoaService pessoaService) {
+    public PedidoController(PedidoService pedidoService, UsuarioService usuarioService) {
         this.pedidoService = pedidoService;
-        this.pessoaService = pessoaService;
+        this.usuarioService = usuarioService;
     }
 
     @PostMapping
     @Operation(summary = "Cria um novo pedido para o usuário logado")
     public ResponseEntity<PedidoResponseDTO> criarPedido(@RequestBody PedidoRequestDTO pedidoRequestDTO) {
-        Pessoa pessoaLogada = getPessoaLogada();
-        PedidoResponseDTO novoPedido = pedidoService.criarPedido(pedidoRequestDTO, pessoaLogada.getCodigo());
+        Usuario usuarioLogado = getUsuarioLogada();
+        PedidoResponseDTO novoPedido = pedidoService.criarPedido(pedidoRequestDTO, usuarioLogado.getCodigo());
         return ResponseEntity.status(HttpStatus.CREATED).body(novoPedido);
     }
 
     @GetMapping("/meus-pedidos")
     @Operation(summary = "Lista os pedidos do usuário logado")
     public ResponseEntity<List<PedidoResponseDTO>> listarMeusPedidos() {
-        Pessoa pessoaLogada = getPessoaLogada();
-        List<PedidoResponseDTO> pedidos = pedidoService.listarPedidosPorCliente(pessoaLogada.getCodigo());
+        Usuario usuarioLogado = getUsuarioLogada();
+        List<PedidoResponseDTO> pedidos = pedidoService.listarPedidosPorCliente(usuarioLogado.getCodigo());
         return ResponseEntity.ok(pedidos);
     }
 
@@ -74,16 +74,16 @@ public class PedidoController {
      * @return A entidade Pessoa do usuário logado.
      * @throws IllegalStateException se o usuário autenticado não for encontrado no banco de dados.
      */
-    private Pessoa getPessoaLogada() {
+    private Usuario getUsuarioLogada() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
 
-        Pessoa pessoa = pessoaService.buscarPorEmail(email);
-        if (pessoa == null) {
+        Usuario usuario = usuarioService.buscarPorEmail(email);
+        if (usuario == null) {
             // Esta situação indica uma inconsistência de dados, pois um usuário autenticado
             // deve sempre ter um registro correspondente no banco de dados.
             throw new IllegalStateException("Inconsistência de dados: usuário autenticado não encontrado no sistema: " + email);
         }
-        return pessoa;
+        return usuario;
     }
 }

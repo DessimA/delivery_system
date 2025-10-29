@@ -7,12 +7,13 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
 @Entity
-public class Pessoa implements UserDetails {
+public class Usuario implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -25,9 +26,7 @@ public class Pessoa implements UserDetails {
     private String cpf;
 
     @NotNull(message = "O campo data não pode ser nulo")
-    @DateTimeFormat(pattern = "dd/MM/yyyy")
-    @Temporal(TemporalType.DATE)
-    private Date dataNascimento;
+    private LocalDate dataNascimento;
 
     private String endereco;
 
@@ -38,10 +37,10 @@ public class Pessoa implements UserDetails {
     @NotBlank(message = "A senha é obrigatória")
     private String senha;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-            name = "pessoas_roles",
-            joinColumns = @JoinColumn(name = "pessoa_codigo", referencedColumnName = "codigo"),
+            name = "usuarios_roles",
+            joinColumns = @JoinColumn(name = "usuario_codigo", referencedColumnName = "codigo"),
             inverseJoinColumns = @JoinColumn(name = "role_codigo", referencedColumnName = "papel")
     )
     private List<Role> roles;
@@ -75,11 +74,11 @@ public class Pessoa implements UserDetails {
         this.cpf = cpf;
     }
 
-    public Date getDataNascimento() {
+    public LocalDate getDataNascimento() {
         return dataNascimento;
     }
 
-    public void setDataNascimento(Date dataNascimento) {
+    public void setDataNascimento(LocalDate dataNascimento) {
         this.dataNascimento = dataNascimento;
     }
 

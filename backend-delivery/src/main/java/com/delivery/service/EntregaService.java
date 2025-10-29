@@ -5,14 +5,15 @@ import com.delivery.dto.EntregaResponseDTO;
 import com.delivery.mapper.EntregaMapper;
 import com.delivery.model.Entrega;
 import com.delivery.model.Pedido;
-import com.delivery.model.Pessoa;
+import com.delivery.model.Usuario;
 import com.delivery.repository.EntregaRepository;
 import com.delivery.repository.PedidoRepository;
-import com.delivery.repository.PessoaRepository;
+import com.delivery.repository.UsuarioRepository;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import com.delivery.exception.UserNotFoundException;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,16 +30,16 @@ public class EntregaService {
 
     private final EntregaRepository entregaRepository;
     private final PedidoRepository pedidoRepository;
-    private final PessoaRepository pessoaRepository;
+    private final UsuarioRepository usuarioRepository;
     private final EntregaMapper entregaMapper;
     private final SimpMessagingTemplate messagingTemplate;
 
     public EntregaService(EntregaRepository entregaRepository, PedidoRepository pedidoRepository,
-                          PessoaRepository pessoaRepository, EntregaMapper entregaMapper,
+                          UsuarioRepository usuarioRepository, EntregaMapper entregaMapper,
                           SimpMessagingTemplate messagingTemplate) {
         this.entregaRepository = entregaRepository;
         this.pedidoRepository = pedidoRepository;
-        this.pessoaRepository = pessoaRepository;
+        this.usuarioRepository = usuarioRepository;
         this.entregaMapper = entregaMapper;
         this.messagingTemplate = messagingTemplate;
     }
@@ -78,7 +79,7 @@ public class EntregaService {
             throw new IllegalStateException("Esta entrega não está disponível para ser aceita.");
         }
 
-        Pessoa entregador = getAuthenticatedUser();
+        Usuario entregador = getAuthenticatedUser();
         if (!isUsuarioComRole(entregador, ROLE_DELIVERY)) {
             throw new SecurityException("Usuário não autorizado a aceitar entregas.");
         }
@@ -93,7 +94,7 @@ public class EntregaService {
         Entrega entrega = entregaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Entrega não encontrada."));
 
-        Pessoa usuarioLogado = getAuthenticatedUser();
+        Usuario usuarioLogado = getAuthenticatedUser();
         validarAutorizacaoParaAtualizarStatus(entrega, usuarioLogado);
 
         entrega.setStatus(novoStatus);
@@ -109,7 +110,7 @@ public class EntregaService {
     }
 
     public List<EntregaResponseDTO> listarMinhasEntregas() {
-        Pessoa entregador = getAuthenticatedUser();
+        Usuario entregador = getAuthenticatedUser();
         if (!isUsuarioComRole(entregador, ROLE_DELIVERY)) {
             throw new SecurityException("Usuário não é um entregador.");
         }
@@ -118,7 +119,7 @@ public class EntregaService {
                 .collect(Collectors.toList());
     }
 
-    private void validarAutorizacaoParaAtualizarStatus(Entrega entrega, Pessoa usuarioLogado) {
+    private void validarAutorizacaoParaAtualizarStatus(Entrega entrega, Usuario usuarioLogado) {
         boolean isAdmin = isUsuarioComRole(usuarioLogado, ROLE_ADMIN);
         boolean isOwner = entrega.getEntregador() != null && entrega.getEntregador().getCodigo().equals(usuarioLogado.getCodigo());
 
@@ -136,16 +137,16 @@ public class EntregaService {
         }
     }
 
-    private boolean isUsuarioComRole(Pessoa pessoa, String role) {
-        return pessoa.getRoles().stream().anyMatch(r -> r.getAuthority().equals(role));
+    private boolean isUsuarioComRole(Usuario usuario, String role) {
+        return usuario.getRoles().stream().anyMatch(r -> r.getAuthority().equals(role));
     }
 
-    private Pessoa getAuthenticatedUser() {
+    private Usuario getAuthenticatedUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        Pessoa pessoa = pessoaRepository.findByEmail(email);
-        if (pessoa == null) {
-            throw new IllegalStateException("Inconsistência de dados: usuário autenticado não encontrado: " + email);
+        Usuario usuario = usuarioRepository.findByEmail(email);
+        if (usuario == null) {
+            throw new UserNotFoundException("Inconsistência de dados: usuário autenticado não encontrado: " + email);
         }
-        return pessoa;
+        return usuario;
     }
 }

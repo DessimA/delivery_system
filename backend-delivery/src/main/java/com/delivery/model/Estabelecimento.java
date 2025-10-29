@@ -25,7 +25,7 @@ public class Estabelecimento {
 
     @OneToOne
     @JoinColumn(name = "usuario_id", referencedColumnName = "codigo")
-    private Pessoa usuario;
+    private Usuario usuario;
 
     // Getters and Setters
 
@@ -77,11 +77,11 @@ public class Estabelecimento {
         this.ativo = ativo;
     }
 
-    public Pessoa getUsuario() {
+    public Usuario getUsuario() {
         return usuario;
     }
 
-    public void setUsuario(Pessoa usuario) {
+    public void setUsuario(Usuario usuario) {
         this.usuario = usuario;
     }
 }

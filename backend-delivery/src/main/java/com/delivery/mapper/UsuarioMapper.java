@@ -2,7 +2,7 @@ package com.delivery.mapper;
 
 import com.delivery.dto.UsuarioRequestDTO;
 import com.delivery.dto.UsuarioResponseDTO;
-import com.delivery.model.Pessoa;
+import com.delivery.model.Usuario;
 import com.delivery.model.Role;
 import org.springframework.stereotype.Component;
 
@@ -11,27 +11,27 @@ import java.util.stream.Collectors;
 @Component
 public class UsuarioMapper {
 
-    public Pessoa toEntity(UsuarioRequestDTO dto) {
-        Pessoa pessoa = new Pessoa();
-        pessoa.setNome(dto.getNome());
-        pessoa.setCpf(dto.getCpf());
-        pessoa.setDataNascimento(dto.getDataNascimento());
-        pessoa.setEndereco(dto.getEndereco());
-        pessoa.setEmail(dto.getEmail());
-        pessoa.setSenha(dto.getSenha());
-        return pessoa;
+    public Usuario toEntity(UsuarioRequestDTO dto) {
+        Usuario usuario = new Usuario();
+        usuario.setNome(dto.getNome());
+        usuario.setCpf(dto.getCpf());
+        usuario.setDataNascimento(dto.getDataNascimento());
+        usuario.setEndereco(dto.getEndereco());
+        usuario.setEmail(dto.getEmail());
+        usuario.setSenha(dto.getSenha());
+        return usuario;
     }
 
-    public UsuarioResponseDTO toResponseDTO(Pessoa pessoa) {
+    public UsuarioResponseDTO toResponseDTO(Usuario usuario) {
         UsuarioResponseDTO dto = new UsuarioResponseDTO();
-        dto.setCodigo(pessoa.getCodigo());
-        dto.setNome(pessoa.getNome());
-        dto.setCpf(pessoa.getCpf());
-        dto.setDataNascimento(pessoa.getDataNascimento());
-        dto.setEndereco(pessoa.getEndereco());
-        dto.setEmail(pessoa.getEmail());
-        if (pessoa.getRoles() != null) {
-            dto.setRoles(pessoa.getRoles().stream()
+        dto.setCodigo(usuario.getCodigo());
+        dto.setNome(usuario.getNome());
+        dto.setCpf(usuario.getCpf());
+        dto.setDataNascimento(usuario.getDataNascimento());
+        dto.setEndereco(usuario.getEndereco());
+        dto.setEmail(usuario.getEmail());
+        if (usuario.getRoles() != null) {
+            dto.setRoles(usuario.getRoles().stream()
                     .map(Role::getPapel)
                     .collect(Collectors.toList()));
         }

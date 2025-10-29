@@ -4,15 +4,16 @@ import com.delivery.dto.ProdutoRequestDTO;
 import com.delivery.dto.ProdutoResponseDTO;
 import com.delivery.mapper.ProdutoMapper;
 import com.delivery.model.Estabelecimento;
-import com.delivery.model.Pessoa;
+import com.delivery.model.Usuario;
 import com.delivery.model.Produto;
-import com.delivery.repository.PessoaRepository;
+import com.delivery.repository.UsuarioRepository;
 import com.delivery.repository.ProdutoRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.delivery.exception.UserNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,13 +28,13 @@ public class ProdutoService {
     private static final String ROLE_ADMIN = "ROLE_ADMIN";
 
     private final ProdutoRepository produtoRepository;
-    private final PessoaRepository pessoaRepository;
+    private final UsuarioRepository usuarioRepository;
     private final ProdutoMapper produtoMapper;
     private final String uploadDir;
 
-    public ProdutoService(ProdutoRepository produtoRepository, PessoaRepository pessoaRepository, ProdutoMapper produtoMapper, @Value("${file.upload-dir}") String uploadDir) {
+    public ProdutoService(ProdutoRepository produtoRepository, UsuarioRepository usuarioRepository, ProdutoMapper produtoMapper, @Value("${file.upload-dir}") String uploadDir) {
         this.produtoRepository = produtoRepository;
-        this.pessoaRepository = pessoaRepository;
+        this.usuarioRepository = usuarioRepository;
         this.produtoMapper = produtoMapper;
         this.uploadDir = uploadDir;
     }
@@ -45,8 +46,8 @@ public class ProdutoService {
     }
 
     public List<ProdutoResponseDTO> listarDoMeuEstabelecimento() {
-        Pessoa pessoa = getAuthenticatedUser();
-        Estabelecimento estabelecimento = pessoa.getEstabelecimento();
+        Usuario usuario = getAuthenticatedUser();
+        Estabelecimento estabelecimento = usuario.getEstabelecimento();
         if (estabelecimento == null) {
             throw new IllegalStateException("Usuário não é dono de um estabelecimento.");
         }
@@ -64,8 +65,8 @@ public class ProdutoService {
     public ProdutoResponseDTO criarProduto(ProdutoRequestDTO produtoRequestDTO, MultipartFile imagem) {
         Produto produto = produtoMapper.toEntity(produtoRequestDTO);
 
-        Pessoa pessoaLogada = getAuthenticatedUser();
-        Estabelecimento estabelecimento = pessoaLogada.getEstabelecimento();
+        Usuario usuarioLogado = getAuthenticatedUser();
+        Estabelecimento estabelecimento = usuarioLogado.getEstabelecimento();
         if (estabelecimento == null) {
             throw new IllegalStateException("Usuário não tem um estabelecimento associado para criar produtos.");
         }
@@ -80,12 +81,12 @@ public class ProdutoService {
     }
 
     public ProdutoResponseDTO atualizarProduto(Long id, ProdutoRequestDTO produtoRequestDTO) {
-        Pessoa pessoaLogada = getAuthenticatedUser();
+        Usuario usuarioLogado = getAuthenticatedUser();
         Produto produtoExistente = produtoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Produto não encontrado com o ID: " + id));
+                .orElseThrow(() -> new UserNotFoundException("Produto não encontrado com o ID: " + id));
 
         // TODO: Substituir por anotações de segurança. Ex: @PreAuthorize("@customSecurity.podeModificarProduto(authentication, #id)")
-        if (!isUsuarioAutorizadoParaModificar(produtoExistente, pessoaLogada)) {
+        if (!isUsuarioAutorizadoParaModificar(produtoExistente, usuarioLogado)) {
             throw new SecurityException("Usuário não autorizado a modificar este produto.");
         }
 
@@ -97,31 +98,31 @@ public class ProdutoService {
     }
 
     public void excluir(Long id) {
-        Pessoa pessoaLogada = getAuthenticatedUser();
+        Usuario usuarioLogado = getAuthenticatedUser();
         Produto produto = produtoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Produto não encontrado com o ID: " + id));
+                .orElseThrow(() -> new UserNotFoundException("Produto não encontrado com o ID: " + id));
 
         // TODO: Substituir por anotações de segurança.
-        if (!isUsuarioAutorizadoParaModificar(produto, pessoaLogada)) {
+        if (!isUsuarioAutorizadoParaModificar(produto, usuarioLogado)) {
             throw new SecurityException("Usuário não autorizado a excluir este produto.");
         }
         produtoRepository.delete(produto);
     }
 
-    private Pessoa getAuthenticatedUser() {
+    private Usuario getAuthenticatedUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        Pessoa pessoa = pessoaRepository.findByEmail(email);
-        if (pessoa == null) {
-            throw new IllegalStateException("Inconsistência de dados: usuário autenticado não encontrado: " + email);
+        Usuario usuario = usuarioRepository.findByEmail(email);
+        if (usuario == null) {
+            throw new UserNotFoundException("Inconsistência de dados: usuário autenticado não encontrado: " + email);
         }
-        return pessoa;
+        return usuario;
     }
 
-    private boolean isUsuarioAutorizadoParaModificar(Produto produto, Pessoa pessoa) {
-        if (pessoa.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals(ROLE_ADMIN))) {
+    private boolean isUsuarioAutorizadoParaModificar(Produto produto, Usuario usuario) {
+        if (usuario.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals(ROLE_ADMIN))) {
             return true;
         }
-        Estabelecimento estabelecimentoUsuario = pessoa.getEstabelecimento();
+        Estabelecimento estabelecimentoUsuario = usuario.getEstabelecimento();
         Estabelecimento estabelecimentoProduto = produto.getEstabelecimento();
         return estabelecimentoUsuario != null && estabelecimentoProduto != null &&
                 estabelecimentoProduto.getId().equals(estabelecimentoUsuario.getId());

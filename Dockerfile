@@ -1,4 +1,4 @@
-FROM openjdk:22-jdk-slim
+FROM openjdk:17-alpine
 
 WORKDIR /app
 
@@ -9,11 +9,11 @@ COPY pom.xml ./pom.xml
 COPY src ./src
 
 RUN chmod +x ./mvnw
-RUN apt-get update && apt-get install -y dos2unix
+RUN apk add dos2unix
 RUN dos2unix ./mvnw
 RUN ls -la /app
 RUN cat ./mvnw
-RUN bash ./mvnw clean install -DskipTests
+RUN sh ./mvnw clean install -DskipTests
 
 EXPOSE 8080
 

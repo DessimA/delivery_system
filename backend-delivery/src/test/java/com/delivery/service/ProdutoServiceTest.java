@@ -2,10 +2,10 @@ package com.delivery.service;
 
 import com.delivery.dto.ProdutoRequestDTO;
 import com.delivery.model.Estabelecimento;
-import com.delivery.model.Pessoa;
+import com.delivery.model.Usuario;
 import com.delivery.model.Produto;
 import com.delivery.model.Role;
-import com.delivery.repository.PessoaRepository;
+import com.delivery.repository.UsuarioRepository;
 import com.delivery.repository.ProdutoRepository;
 import com.delivery.mapper.ProdutoMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,26 +14,28 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collections;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class ProdutoServiceTest {
 
     @Mock
     private ProdutoRepository produtoRepository;
 
     @Mock
-    private PessoaRepository pessoaRepository;
+    private UsuarioRepository usuarioRepository;
 
     @Mock
     private ProdutoMapper produtoMapper;
@@ -41,35 +43,28 @@ public class ProdutoServiceTest {
     @InjectMocks
     private ProdutoService produtoService;
 
-    private Pessoa adminUser;
-    private Pessoa restaurantUser;
+    private Usuario adminUser;
+    private Usuario restaurantUser;
     private Estabelecimento estabelecimento;
     private Produto produtoDoRestaurante;
     private ProdutoRequestDTO produtoRequestDTO;
 
     @BeforeEach
     void setUp() {
-        // Mock SecurityContextHolder
-        Authentication authentication = mock(Authentication.class);
-        SecurityContext securityContext = mock(SecurityContext.class);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        SecurityContextHolder.setContext(securityContext);
-
-        // Setup common test data
-        adminUser = new Pessoa();
+        adminUser = new Usuario();
         adminUser.setEmail("admin@test.com");
         Role adminRole = new Role();
-        adminRole.setPapel("ADMIN");
+        adminRole.setPapel("ROLE_ADMIN");
         adminUser.setRoles(Collections.singletonList(adminRole));
 
         estabelecimento = new Estabelecimento();
         estabelecimento.setId(1L);
         estabelecimento.setNome("Restaurante Teste");
 
-        restaurantUser = new Pessoa();
+        restaurantUser = new Usuario();
         restaurantUser.setEmail("restaurant@test.com");
         Role restaurantRole = new Role();
-        restaurantRole.setPapel("RESTAURANT");
+        restaurantRole.setPapel("ROLE_RESTAURANT");
         restaurantUser.setRoles(Collections.singletonList(restaurantRole));
         restaurantUser.setEstabelecimento(estabelecimento);
 
@@ -84,9 +79,14 @@ public class ProdutoServiceTest {
 
     @Test
     void criarProduto_shouldAssociateWithRestaurantUser() {
-        when(SecurityContextHolder.getContext().getAuthentication().getPrincipal()).thenReturn(mock(UserDetails.class));
-        when(((UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUsername()).thenReturn(restaurantUser.getEmail());
-        when(pessoaRepository.findByEmail(restaurantUser.getEmail())).thenReturn(restaurantUser);
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getName()).thenReturn(restaurantUser.getEmail());
+        when(authentication.getAuthorities()).thenReturn((java.util.Collection) restaurantUser.getRoles());
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        when(usuarioRepository.findByEmail(restaurantUser.getEmail())).thenReturn(restaurantUser);
         when(produtoMapper.toEntity(any(ProdutoRequestDTO.class))).thenReturn(new Produto());
         when(produtoRepository.save(any(Produto.class))).thenReturn(produtoDoRestaurante);
         when(produtoMapper.toResponseDTO(any(Produto.class))).thenReturn(null); // Not testing DTO conversion here
@@ -100,9 +100,14 @@ public class ProdutoServiceTest {
 
     @Test
     void atualizarProduto_shouldAllowAdminToUpdateAnyProduct() {
-        when(SecurityContextHolder.getContext().getAuthentication().getPrincipal()).thenReturn(mock(UserDetails.class));
-        when(((UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUsername()).thenReturn(adminUser.getEmail());
-        when(pessoaRepository.findByEmail(adminUser.getEmail())).thenReturn(adminUser);
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getName()).thenReturn(adminUser.getEmail());
+        when(authentication.getAuthorities()).thenReturn((java.util.Collection) adminUser.getRoles());
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        when(usuarioRepository.findByEmail(adminUser.getEmail())).thenReturn(adminUser);
         when(produtoRepository.findById(produtoDoRestaurante.getIdProduto())).thenReturn(Optional.of(produtoDoRestaurante));
         when(produtoRepository.save(any(Produto.class))).thenReturn(produtoDoRestaurante);
 
@@ -113,9 +118,14 @@ public class ProdutoServiceTest {
 
     @Test
     void atualizarProduto_shouldAllowRestaurantUserToUpdateOwnProduct() {
-        when(SecurityContextHolder.getContext().getAuthentication().getPrincipal()).thenReturn(mock(UserDetails.class));
-        when(((UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUsername()).thenReturn(restaurantUser.getEmail());
-        when(pessoaRepository.findByEmail(restaurantUser.getEmail())).thenReturn(restaurantUser);
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getName()).thenReturn(restaurantUser.getEmail());
+        when(authentication.getAuthorities()).thenReturn((java.util.Collection) restaurantUser.getRoles());
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        when(usuarioRepository.findByEmail(restaurantUser.getEmail())).thenReturn(restaurantUser);
         when(produtoRepository.findById(produtoDoRestaurante.getIdProduto())).thenReturn(Optional.of(produtoDoRestaurante));
         when(produtoRepository.save(any(Produto.class))).thenReturn(produtoDoRestaurante);
 
@@ -132,9 +142,14 @@ public class ProdutoServiceTest {
         produtoDeOutroRestaurante.setIdProduto(2L);
         produtoDeOutroRestaurante.setEstabelecimento(outroEstabelecimento);
 
-        when(SecurityContextHolder.getContext().getAuthentication().getPrincipal()).thenReturn(mock(UserDetails.class));
-        when(((UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUsername()).thenReturn(restaurantUser.getEmail());
-        when(pessoaRepository.findByEmail(restaurantUser.getEmail())).thenReturn(restaurantUser);
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getName()).thenReturn(restaurantUser.getEmail());
+        when(authentication.getAuthorities()).thenReturn((java.util.Collection) restaurantUser.getRoles());
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        when(usuarioRepository.findByEmail(restaurantUser.getEmail())).thenReturn(restaurantUser);
         when(produtoRepository.findById(produtoDeOutroRestaurante.getIdProduto())).thenReturn(Optional.of(produtoDeOutroRestaurante));
 
         assertThrows(SecurityException.class, () ->
@@ -145,9 +160,14 @@ public class ProdutoServiceTest {
 
     @Test
     void excluir_shouldAllowAdminToDeleteAnyProduct() {
-        when(SecurityContextHolder.getContext().getAuthentication().getPrincipal()).thenReturn(mock(UserDetails.class));
-        when(((UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUsername()).thenReturn(adminUser.getEmail());
-        when(pessoaRepository.findByEmail(adminUser.getEmail())).thenReturn(adminUser);
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getName()).thenReturn(adminUser.getEmail());
+        when(authentication.getAuthorities()).thenReturn((java.util.Collection) adminUser.getRoles());
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        when(usuarioRepository.findByEmail(adminUser.getEmail())).thenReturn(adminUser);
         when(produtoRepository.findById(produtoDoRestaurante.getIdProduto())).thenReturn(Optional.of(produtoDoRestaurante));
 
         produtoService.excluir(produtoDoRestaurante.getIdProduto());
@@ -157,9 +177,14 @@ public class ProdutoServiceTest {
 
     @Test
     void excluir_shouldAllowRestaurantUserToDeleteOwnProduct() {
-        when(SecurityContextHolder.getContext().getAuthentication().getPrincipal()).thenReturn(mock(UserDetails.class));
-        when(((UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUsername()).thenReturn(restaurantUser.getEmail());
-        when(pessoaRepository.findByEmail(restaurantUser.getEmail())).thenReturn(restaurantUser);
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getName()).thenReturn(restaurantUser.getEmail());
+        when(authentication.getAuthorities()).thenReturn((java.util.Collection) restaurantUser.getRoles());
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        when(usuarioRepository.findByEmail(restaurantUser.getEmail())).thenReturn(restaurantUser);
         when(produtoRepository.findById(produtoDoRestaurante.getIdProduto())).thenReturn(Optional.of(produtoDoRestaurante));
 
         produtoService.excluir(produtoDoRestaurante.getIdProduto());
@@ -175,9 +200,14 @@ public class ProdutoServiceTest {
         produtoDeOutroRestaurante.setIdProduto(2L);
         produtoDeOutroRestaurante.setEstabelecimento(outroEstabelecimento);
 
-        when(SecurityContextHolder.getContext().getAuthentication().getPrincipal()).thenReturn(mock(UserDetails.class));
-        when(((UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUsername()).thenReturn(restaurantUser.getEmail());
-        when(pessoaRepository.findByEmail(restaurantUser.getEmail())).thenReturn(restaurantUser);
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getName()).thenReturn(restaurantUser.getEmail());
+        when(authentication.getAuthorities()).thenReturn((java.util.Collection) restaurantUser.getRoles());
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        when(usuarioRepository.findByEmail(restaurantUser.getEmail())).thenReturn(restaurantUser);
         when(produtoRepository.findById(produtoDeOutroRestaurante.getIdProduto())).thenReturn(Optional.of(produtoDeOutroRestaurante));
 
         assertThrows(SecurityException.class, () ->
@@ -188,9 +218,14 @@ public class ProdutoServiceTest {
 
     @Test
     void listarDoMeuEstabelecimento_shouldReturnOnlyOwnProducts() {
-        when(SecurityContextHolder.getContext().getAuthentication().getPrincipal()).thenReturn(mock(UserDetails.class));
-        when(((UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUsername()).thenReturn(restaurantUser.getEmail());
-        when(pessoaRepository.findByEmail(restaurantUser.getEmail())).thenReturn(restaurantUser);
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getName()).thenReturn(restaurantUser.getEmail());
+        when(authentication.getAuthorities()).thenReturn((java.util.Collection) restaurantUser.getRoles());
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        when(usuarioRepository.findByEmail(restaurantUser.getEmail())).thenReturn(restaurantUser);
         when(produtoRepository.findByEstabelecimentoId(estabelecimento.getId())).thenReturn(Collections.singletonList(produtoDoRestaurante));
         when(produtoMapper.toResponseDTO(any(Produto.class))).thenReturn(null); // Not testing DTO conversion here
 

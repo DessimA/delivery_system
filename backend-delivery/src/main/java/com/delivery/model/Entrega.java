@@ -17,7 +17,7 @@ public class Entrega {
 
     @ManyToOne
     @JoinColumn(name = "entregador_id", referencedColumnName = "codigo")
-    private Pessoa entregador;
+    private Usuario entregador;
 
     private String enderecoOrigem;
     private String enderecoDestino;
@@ -52,11 +52,11 @@ public class Entrega {
         this.pedido = pedido;
     }
 
-    public Pessoa getEntregador() {
+    public Usuario getEntregador() {
         return entregador;
     }
 
-    public void setEntregador(Pessoa entregador) {
+    public void setEntregador(Usuario entregador) {
         this.entregador = entregador;
     }
 
