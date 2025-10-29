@@ -50,11 +50,13 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  id: {
+    type: String,
+    required: true,
+  },
 });
 
 const emit = defineEmits(['update:modelValue']);
-
-const id = computed(() => `input-${Math.random().toString(36).substr(2, 9)}`);
 
 const updateValue = (event) => {
   emit('update:modelValue', event.target.value);

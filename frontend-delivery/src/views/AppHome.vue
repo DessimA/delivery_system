@@ -16,10 +16,10 @@
     <section class="filters-section">
       <div class="search-bar">
         <BaseInput
+          id="search-products"
           v-model="searchQuery"
           placeholder="Buscar produtos..."
           icon="search"
-          @update:modelValue="handleSearch"
         />
       </div>
       <div class="filter-chips">

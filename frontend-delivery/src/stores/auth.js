@@ -36,7 +36,13 @@ export const useAuthStore = defineStore('auth', {
       } catch (error) {
         console.error('Login failed:', error);
         this.logout();
-        throw error;
+        
+        // Extrair mensagem de erro da resposta da API
+        const errorMessage = error.response?.data?.message || 'Erro ao fazer login';
+        const errorWithMessage = new Error(errorMessage);
+        errorWithMessage.response = error.response; // Preservar response original
+        
+        throw errorWithMessage;
       }
     },
 
@@ -47,6 +53,10 @@ export const useAuthStore = defineStore('auth', {
       try {
         const response = await api.get('/usuarios/me');
         this.user = response.data;
+        
+        // Salvar usuário no localStorage
+        localStorage.setItem('user', JSON.stringify(this.user));
+        
       } catch (error) {
         console.error('Failed to fetch user:', error);
         this.logout();
@@ -58,6 +68,7 @@ export const useAuthStore = defineStore('auth', {
       this.token = null;
       this.user = null;
       localStorage.removeItem('authToken');
+      localStorage.removeItem('user'); // Remover user do localStorage também
     },
 
     setUser(newUser) {

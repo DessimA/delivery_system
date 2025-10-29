@@ -59,8 +59,8 @@ import BaseButton from '@/components/base/BaseButton.vue';
 
 const authStore = useAuthStore();
 const router = useRouter();
-const route = useRoute(); // Get current route to access query params
-const { loading, error, execute } = useApi();
+const route = useRoute();
+const { loading, execute } = useApi();
 const { addNotification } = useNotifications();
 
 const form = reactive({
@@ -77,13 +77,7 @@ const errors = reactive({
 watch(() => form.email, () => { errors.email = ''; });
 watch(() => form.password, () => { errors.password = ''; });
 
-// Show notification when API error occurs
-watch(error, (newError) => {
-  if (newError) {
-    addNotification({ type: 'error', message: newError });
-  }
-});
-
+// Função de validação do formulário
 const validateForm = () => {
   // Reset errors before validation
   errors.email = '';
@@ -114,19 +108,20 @@ const handleLogin = async () => {
   try {
     await execute(() => authStore.login({
       email: form.email,
-      senha: form.password, // Backend expects 'senha'
+      senha: form.password,
     }));
     
     addNotification({ type: 'success', message: 'Login realizado com sucesso!' });
     
-    // Redirect to intended page or home
     const redirectPath = route.query.redirect || '/';
     router.push(redirectPath);
 
   } catch (err) {
-    // The 'watch' on the error ref already handles showing the notification.
-    // We just log the full error for debugging purposes.
     console.error('Login failed in component:', err);
+    
+    // Disparar notificação de erro diretamente
+    const errorMessage = err.message || err.response?.data?.message || 'Erro ao fazer login';
+    addNotification({ type: 'error', message: errorMessage });
   }
 };
 </script>

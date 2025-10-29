@@ -3,7 +3,7 @@ import { ref } from 'vue';
 const notifications = ref([]);
 
 export function useNotifications() {
-  const addNotification = (type, message, duration = 5000) => {
+  const addNotification = ({ type, message, duration = 5000 }) => {
     const notification = {
       id: Date.now() + Math.random(),
       type, // success, error, warning, info
