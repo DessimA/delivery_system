@@ -4,6 +4,9 @@ import AppLogin from '../views/AppLogin.vue';
 import api from '@/api';
 import { createPinia, setActivePinia } from 'pinia';
 
+const mockRouterPush = vi.fn();
+const mockAddNotification = vi.fn();
+
 describe('AppLogin', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
@@ -30,7 +33,7 @@ describe('AppLogin', () => {
     // Mock router push
     vi.mock('vue-router', () => ({
       useRouter: () => ({
-        push: vi.fn(),
+        push: mockRouterPush,
       }),
       useRoute: () => ({
         query: {},
@@ -39,6 +42,13 @@ describe('AppLogin', () => {
       createRouter: vi.fn(() => ({
         beforeEach: vi.fn(),
       })),
+    }));
+
+    // Mock useNotifications
+    vi.mock('@/composables/useNotifications', () => ({
+      useNotifications: () => ({
+        addNotification: mockAddNotification,
+      }),
     }));
   });
 
@@ -64,13 +74,7 @@ describe('AppLogin', () => {
   });
 
   it('displays error message on failed login', async () => {
-    const mockAddNotification = vi.fn();
-    vi.mock('@/composables/useNotifications', () => ({
-      useNotifications: () => ({
-        addNotification: mockAddNotification,
-      }),
-    }));
-
+    // mockAddNotification is already defined globally
     vi.spyOn(api, 'post').mockRejectedValue({
       response: {
         status: 401,
@@ -103,20 +107,7 @@ describe('AppLogin', () => {
   });
 
   it('successfully logs in and redirects', async () => {
-    const mockRouterPush = vi.fn();
-    vi.mock('vue-router', () => ({
-      useRouter: () => ({
-        push: mockRouterPush,
-      }),
-      useRoute: () => ({
-        query: {},
-      }),
-      createWebHistory: vi.fn(),
-      createRouter: vi.fn(() => ({
-        beforeEach: vi.fn(),
-      })),
-    }));
-
+    // mockRouterPush is already defined globally
     const wrapper = mount(AppLogin, {
       global: {
         stubs: {

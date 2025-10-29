@@ -9,7 +9,6 @@ vi.mock('../composables/useApi', () => ({
   useApi: () => ({
     loading: false,
     execute: vi.fn(() => Promise.resolve({ data: [] })),
-    handleSearch: vi.fn(), // Add a no-op handleSearch function
   }),
 }));
 
