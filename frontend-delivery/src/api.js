@@ -3,7 +3,7 @@ import { useAuthStore } from './stores/auth'; // Importe o store de autenticaç�
 import { useNotifications } from './composables/useNotifications'; // Importe o composable de notificações
 import router from './router'; // Importe o roteador
 
-const API_BASE_URL = process.env.VUE_APP_API_BASE_URL || 'http://localhost:8080/api'; // Fallback para desenvolvimento local
+const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:8080/api'; // Fallback para desenvolvimento local
 
 const api = axios.create({
   baseURL: API_BASE_URL,

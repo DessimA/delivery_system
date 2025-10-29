@@ -6,14 +6,16 @@ import { createPinia, setActivePinia } from 'pinia';
 import { useAuthStore } from '../stores/auth';
 
 // Mock useAuthStore
+const mockAuthStore = {
+  isLoggedIn: false,
+  isRestaurantOwner: false,
+  isDeliveryUser: false,
+  user: null,
+  logout: vi.fn(),
+};
+
 vi.mock('../stores/auth', () => ({
-  useAuthStore: vi.fn(() => ({
-    isLoggedIn: false,
-    isRestaurantOwner: false,
-    isDeliveryUser: false,
-    user: null,
-    logout: vi.fn(),
-  })),
+  useAuthStore: vi.fn(() => mockAuthStore),
 }));
 
 // Mock router
@@ -25,17 +27,21 @@ const router = createRouter({
     { path: '/products', name: 'Products', component: { template: '<div>Products</div>' } },
     { path: '/cart', name: 'Cart', component: { template: '<div>Cart</div>' } },
     { path: '/restaurant/dashboard', name: 'RestaurantDashboard', component: { template: '<div>Restaurant Dashboard</div>' } },
+    { path: '/delivery/dashboard', name: 'DeliveryDashboard', component: { template: '<div>Delivery Dashboard</div>' } },
+    { path: '/orders', name: 'Orders', component: { template: '<div>Orders</div>' } },
+    { path: '/profile', name: 'Profile', component: { template: '<div>Profile</div>' } },
   ],
 });
 
 describe('AppNavbar', () => {
   beforeEach(async () => {
     setActivePinia(createPinia());
-    const authStore = useAuthStore();
-    authStore.isLoggedIn = false;
-    authStore.isRestaurantOwner = false;
-    authStore.isDeliveryUser = false;
-    authStore.user = null;
+    // Reset mockAuthStore before each test
+    mockAuthStore.isLoggedIn = false;
+    mockAuthStore.isRestaurantOwner = false;
+    mockAuthStore.isDeliveryUser = false;
+    mockAuthStore.user = null;
+    mockAuthStore.logout.mockClear();
 
     // Mock localStorage
     Object.defineProperty(window, 'localStorage', {
@@ -50,13 +56,15 @@ describe('AppNavbar', () => {
       },
       writable: true,
     });
+    await router.push('/'); // Reset router to home before each test
+    await flushPromises();
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('renders login and register links when not logged in', () => {
+  it('renders login and register links when not logged in', async () => {
     const wrapper = mount(AppNavbar, {
       global: {
         plugins: [router],
@@ -66,16 +74,15 @@ describe('AppNavbar', () => {
         },
       },
     });
-    console.log(wrapper.html());
+    await flushPromises();
     expect(wrapper.find('router-link-stub[to="/login"]').exists()).toBe(true);
     expect(wrapper.find('router-link-stub[to="/register"]').exists()).toBe(true);
-    expect(wrapper.find('.user-dropdown .dropdown-item').filter(w => w.text().includes('Sair')).exists()).toBe(false);
+    expect(wrapper.find('[data-testid="logout-link"]').exists()).toBe(false);
   });
 
   it('renders logout link and user email when logged in', async () => {
-    const authStore = useAuthStore();
-    authStore.isLoggedIn = true;
-    authStore.user = { email: 'test@example.com', roles: ['USER'] };
+    mockAuthStore.isLoggedIn = true;
+    mockAuthStore.user = { email: 'test@example.com', roles: ['USER'] };
     const wrapper = mount(AppNavbar, {
       global: {
         plugins: [router],
@@ -85,19 +92,18 @@ describe('AppNavbar', () => {
         },
       },
     });
-    await flushPromises(); // Wait for created hook to finish
+    await flushPromises();
     expect(wrapper.find('router-link-stub[to="/login"]').exists()).toBe(false);
     expect(wrapper.find('router-link-stub[to="/register"]').exists()).toBe(false);
-    await wrapper.find('.user-profile').trigger('click'); // Open dropdown
-    expect(wrapper.find('.user-dropdown .dropdown-item').filter(w => w.text().includes('Sair')).exists()).toBe(true);
-    expect(wrapper.find('.dropdown-toggle').text()).toBe('test@example.com');
+    await wrapper.find('[data-testid="user-profile-dropdown-toggle"]').trigger('click'); // Open dropdown
+    expect(wrapper.find('[data-testid="logout-link"]').exists()).toBe(true);
+    expect(wrapper.find('.user-profile span').text()).toBe('test@example.com');
   });
 
   it('hides "Meu Restaurante" link for regular user', async () => {
-    const authStore = useAuthStore();
-    authStore.isLoggedIn = true;
-    authStore.isRestaurantOwner = false;
-    authStore.user = { email: 'test@example.com', roles: ['USER'] };
+    mockAuthStore.isLoggedIn = true;
+    mockAuthStore.isRestaurantOwner = false;
+    mockAuthStore.user = { email: 'test@example.com', roles: ['USER'] };
     const wrapper = mount(AppNavbar, {
       global: {
         plugins: [router],
@@ -108,14 +114,13 @@ describe('AppNavbar', () => {
       },
     });
     await flushPromises();
-    expect(wrapper.find('router-link-stub[to="/restaurant/dashboard"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="restaurant-dashboard-link"]').exists()).toBe(false);
   });
 
   it('shows "Meu Restaurante" link for restaurant owner', async () => {
-    const authStore = useAuthStore();
-    authStore.isLoggedIn = true;
-    authStore.isRestaurantOwner = true;
-    authStore.user = { email: 'restaurant@example.com', roles: ['RESTAURANT'] };
+    mockAuthStore.isLoggedIn = true;
+    mockAuthStore.isRestaurantOwner = true;
+    mockAuthStore.user = { email: 'restaurant@example.com', roles: ['RESTAURANT'] };
     const wrapper = mount(AppNavbar, {
       global: {
         plugins: [router],
@@ -126,13 +131,12 @@ describe('AppNavbar', () => {
       },
     });
     await flushPromises();
-    expect(wrapper.find('router-link-stub[to="/restaurant/dashboard"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="restaurant-dashboard-link"]').exists()).toBe(true);
   });
 
   it('logs out user and redirects to login', async () => {
-    const authStore = useAuthStore();
-    authStore.isLoggedIn = true;
-    authStore.user = { email: 'test@example.com', roles: ['USER'] };
+    mockAuthStore.isLoggedIn = true;
+    mockAuthStore.user = { email: 'test@example.com', roles: ['USER'] };
     const pushMock = vi.spyOn(router, 'push');
     const wrapper = mount(AppNavbar, {
       global: {
@@ -145,14 +149,10 @@ describe('AppNavbar', () => {
     });
     await flushPromises();
 
-    await wrapper.find('.user-profile').trigger('click'); // Open dropdown
-    await wrapper.find('.user-profile').trigger('click'); // Open dropdown
-    await wrapper.find('.user-dropdown .dropdown-item').filter(w => w.text().includes('Sair')).trigger('click');
+    await wrapper.find('[data-testid="user-profile-dropdown-toggle"]').trigger('click'); // Open dropdown
+    await wrapper.find('[data-testid="logout-link"]').trigger('click');
 
-    expect(localStorage.removeItem).toHaveBeenCalledWith('authToken');
-    expect(localStorage.removeItem).toHaveBeenCalledWith('user');
-    expect(wrapper.vm.isLoggedIn).toBe(false);
-    expect(wrapper.vm.user).toBe(null);
+    expect(mockAuthStore.logout).toHaveBeenCalled();
     expect(pushMock).toHaveBeenCalledWith('/login');
   });
 });

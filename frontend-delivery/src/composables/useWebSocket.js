@@ -4,8 +4,7 @@ import { ref, watch } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useNotifications } from './useNotifications';
 
-// TODO: Mover para variável de ambiente
-const WEBSOCKET_URL = 'http://localhost:8080/ws';
+const WEBSOCKET_URL = import.meta.env.VITE_APP_WEBSOCKET_URL || 'ws://localhost:8080/ws';
 
 const stompClient = ref(null);
 const isConnected = ref(false);

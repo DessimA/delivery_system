@@ -19,7 +19,7 @@
           v-model="searchQuery"
           placeholder="Buscar produtos..."
           icon="search"
-          @input="handleSearch"
+          @update:modelValue="handleSearch"
         />
       </div>
       <div class="filter-chips">

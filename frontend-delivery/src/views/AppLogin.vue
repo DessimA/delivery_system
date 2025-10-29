@@ -15,6 +15,7 @@
           icon="mail"
           :error="errors.email"
           placeholder="seu@email.com"
+          id="email"
         />
         <BaseInput
           v-model="form.password"
@@ -23,6 +24,7 @@
           icon="lock"
           :error="errors.password"
           placeholder="••••••••"
+          id="password"
         />
 
         <BaseButton

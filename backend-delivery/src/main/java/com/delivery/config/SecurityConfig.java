@@ -27,6 +27,9 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    @Value("${app.cors.allowed-origins}")
+    private String[] allowedOrigins;
+
     @Autowired
     private UserDetailsServiceImplementacao userDetailsService;
 
@@ -91,7 +94,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost", "http://127.0.0.1", "http://localhost:8081", "http://127.0.0.1:8081")); // Adiciona a porta do frontend e 127.0.0.1 com porta
+        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);

@@ -16,8 +16,8 @@
           <Icon name="shopping-cart" />
           <span v-if="cartItemCount > 0" class="cart-badge">{{ cartItemCount }}</span>
         </router-link>
-        <router-link v-if="authStore.isRestaurantOwner" to="/restaurant/dashboard" class="nav-item">Meu Restaurante</router-link>
-        <router-link v-if="authStore.isDeliveryUser" to="/delivery/dashboard" class="nav-item">Minhas Entregas</router-link>
+        <router-link v-if="authStore.isRestaurantOwner" to="/restaurant/dashboard" class="nav-item" data-testid="restaurant-dashboard-link">Meu Restaurante</router-link>
+        <router-link v-if="authStore.isDeliveryUser" to="/delivery/dashboard" class="nav-item" data-testid="delivery-dashboard-link">Minhas Entregas</router-link>
         <router-link v-if="authStore.isLoggedIn" to="/orders" class="nav-item">Meus Pedidos</router-link>
 
         <div class="navbar-auth">
@@ -26,15 +26,15 @@
             <router-link to="/register" class="nav-item primary">Registrar</router-link>
           </template>
           <template v-else>
-            <div class="nav-item user-profile" @click="toggleUserDropdown">
+            <div class="nav-item user-profile" @click="toggleUserDropdown" data-testid="user-profile-dropdown-toggle">
               <Icon name="user-circle" class="user-avatar" />
               <span>{{ authStore.user?.email || 'Usuário' }}</span>
               <Icon :name="isUserDropdownOpen ? 'chevron-up' : 'chevron-down'" class="dropdown-arrow" />
               <div v-if="isUserDropdownOpen" class="user-dropdown">
-                <router-link to="/profile" class="dropdown-item" @click="closeUserDropdown">
+                <router-link to="/profile" class="dropdown-item" @click="closeUserDropdown" data-testid="profile-link">
                   <Icon name="user" /> Perfil
                 </router-link>
-                <div class="dropdown-item" @click="logout">
+                <div class="dropdown-item" @click="logout" data-testid="logout-link">
                   <Icon name="log-out" /> Sair
                 </div>
               </div>

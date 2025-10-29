@@ -21,7 +21,7 @@
 import { computed } from 'vue';
 import BaseIcon from './BaseIcon.vue';
 
-defineProps({
+const props = defineProps({
   modelValue: {
     type: [String, Number],
     default: '',

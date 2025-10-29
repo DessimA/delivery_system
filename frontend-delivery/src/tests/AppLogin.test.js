@@ -64,6 +64,20 @@ describe('AppLogin', () => {
   });
 
   it('displays error message on failed login', async () => {
+    const mockAddNotification = vi.fn();
+    vi.mock('@/composables/useNotifications', () => ({
+      useNotifications: () => ({
+        addNotification: mockAddNotification,
+      }),
+    }));
+
+    vi.spyOn(api, 'post').mockRejectedValue({
+      response: {
+        status: 401,
+        data: { message: 'Credenciais inválidas' },
+      },
+    });
+
     const wrapper = mount(AppLogin, {
       global: {
         stubs: {
@@ -74,16 +88,35 @@ describe('AppLogin', () => {
       },
     });
 
-    await wrapper.findComponent({ name: 'BaseInput', props: { placeholder: 'seu@email.com' } }).find('input').setValue('test@example.com');
-    await wrapper.findComponent({ name: 'BaseInput', props: { placeholder: '••••••••' } }).find('input').setValue('wrongpassword');
+    await wrapper.find('#email').setValue('test@example.com');
+    await wrapper.find('#password').setValue('wrongpassword');
     await wrapper.find('form').trigger('submit');
 
-    expect(wrapper.findComponent({ name: 'BaseInput', props: { placeholder: 'seu@email.com' } }).props('error')).toBe('Erro ao fazer login. Verifique suas credenciais.');
-    expect(localStorage.removeItem).toHaveBeenCalledWith('authToken');
-    expect(localStorage.removeItem).toHaveBeenCalledWith('user');
+    expect(mockAddNotification).toHaveBeenCalledWith({
+      type: 'error',
+      message: 'Credenciais inválidas',
+    });
+    expect(api.post).toHaveBeenCalledWith('/auth/login', {
+      email: 'test@example.com',
+      senha: 'wrongpassword',
+    });
   });
 
   it('successfully logs in and redirects', async () => {
+    const mockRouterPush = vi.fn();
+    vi.mock('vue-router', () => ({
+      useRouter: () => ({
+        push: mockRouterPush,
+      }),
+      useRoute: () => ({
+        query: {},
+      }),
+      createWebHistory: vi.fn(),
+      createRouter: vi.fn(() => ({
+        beforeEach: vi.fn(),
+      })),
+    }));
+
     const wrapper = mount(AppLogin, {
       global: {
         stubs: {
@@ -94,8 +127,8 @@ describe('AppLogin', () => {
       },
     });
 
-    await wrapper.findComponent({ name: 'BaseInput', props: { placeholder: 'seu@email.com' } }).find('input').setValue('test@example.com');
-    await wrapper.findComponent({ name: 'BaseInput', props: { placeholder: '••••••••' } }).find('input').setValue('password123');
+    await wrapper.find('#email').setValue('test@example.com');
+    await wrapper.find('#password').setValue('password123');
     await wrapper.find('form').trigger('submit');
 
     expect(api.post).toHaveBeenCalledWith('/auth/login', {
@@ -105,6 +138,6 @@ describe('AppLogin', () => {
     expect(localStorage.setItem).toHaveBeenCalledWith('authToken', 'fake-jwt-token');
     expect(api.get).toHaveBeenCalledWith('/usuarios/me');
     expect(localStorage.setItem).toHaveBeenCalledWith('user', JSON.stringify({ email: 'test@example.com', roles: ['USER'] }));
-    // expect(wrapper.vm.$router.push).toHaveBeenCalledWith('/products'); // This mock is not working as expected
+    expect(mockRouterPush).toHaveBeenCalledWith('/');
   });
 });
