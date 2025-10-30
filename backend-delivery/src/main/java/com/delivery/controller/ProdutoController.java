@@ -47,7 +47,14 @@ public class ProdutoController {
 
     @Operation(summary = "Cria um novo produto (ADMIN, RESTAURANT)", security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping
-    public ResponseEntity<ProdutoResponseDTO> criarProduto(@RequestPart("produto") ProdutoRequestDTO produtoRequestDTO, @RequestPart(value = "imagem", required = false) MultipartFile imagem) {
+    public ResponseEntity<ProdutoResponseDTO> criarProduto(@RequestBody ProdutoRequestDTO produtoRequestDTO) {
+        ProdutoResponseDTO novoProduto = produtoService.criarProduto(produtoRequestDTO, null);
+        return ResponseEntity.status(HttpStatus.CREATED).body(novoProduto);
+    }
+    
+    @Operation(summary = "Cria um novo produto com imagem (ADMIN, RESTAURANT)", security = @SecurityRequirement(name = "bearerAuth"))
+    @PostMapping(consumes = "multipart/form-data")
+    public ResponseEntity<ProdutoResponseDTO> criarProdutoComImagem(@RequestPart("produto") ProdutoRequestDTO produtoRequestDTO, @RequestPart(value = "imagem", required = false) MultipartFile imagem) {
         ProdutoResponseDTO novoProduto = produtoService.criarProduto(produtoRequestDTO, imagem);
         return ResponseEntity.status(HttpStatus.CREATED).body(novoProduto);
     }

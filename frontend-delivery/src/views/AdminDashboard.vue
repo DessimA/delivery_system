@@ -59,14 +59,14 @@
 
     <!-- Modal para Adicionar/Editar Produto -->
     <ProductFormModal
-      :visible="isProductModalVisible"
+      v-model="isProductModalVisible"
       :product="selectedProduct"
-      @close="closeProductModal"
+      :saving="saving"
       @save="handleProductSave"
     />
 
     <!-- Modal de Confirmação de Exclusão -->
-    <BaseModal :visible="isDeleteModalVisible" @close="closeDeleteModal" title="Confirmar Exclusão">
+    <BaseModal v-model="isDeleteModalVisible" title="Confirmar Exclusão">
       <p>Você tem certeza que deseja remover o produto "<strong>{{ selectedProduct?.nomeProduto }}</strong>"? Esta ação não pode ser desfeita.</p>
       <template #footer>
         <BaseButton variant="secondary" label="Cancelar" @click="closeDeleteModal" />
@@ -80,14 +80,13 @@
 import { ref, onMounted } from 'vue';
 import { useApi } from '@/composables/useApi';
 import { useNotifications } from '@/composables/useNotifications';
-import api from '@/api';
+import api from '@/plugins/axios';
 
 import BaseButton from '@/components/base/BaseButton.vue';
 import BaseModal from '@/components/base/BaseModal.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import LoadingSpinner from '@/components/base/LoadingSpinner.vue';
-// O componente ProductFormModal precisará ser criado
-// import ProductFormModal from '@/components/ProductFormModal.vue';
+import ProductFormModal from '@/components/ProductFormModal.vue';
 
 const { loading, execute: executeApi } = useApi();
 const { addNotification } = useNotifications();

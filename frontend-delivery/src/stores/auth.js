@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import api from '@/api'; // Use the global, pre-configured api instance
+import api from '@/plugins/axios'; // Importe a instância do axios configurada
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -11,7 +11,7 @@ export const useAuthStore = defineStore('auth', {
   getters: {
     isAuthenticated: (state) => !!state.user,
     isLoggedIn: (state) => !!state.user, // Alias for isAuthenticated
-    userRoles: (state) => state.user?.roles?.map(role => role.authority) || [],
+    userRoles: (state) => state.user?.roles || [],
     
     // Role checks
     isRestaurantOwner() {

@@ -1,5 +1,8 @@
 package com.delivery.security;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import jakarta.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +19,8 @@ import com.delivery.repository.UsuarioRepository;
 @Transactional
 public class UserDetailsServiceImplementacao implements UserDetailsService{
 	
+	private static final Logger logger = LoggerFactory.getLogger(UserDetailsServiceImplementacao.class);
+
 	@Autowired
 	private UsuarioRepository usuarioRepository;
 
@@ -25,6 +30,9 @@ public class UserDetailsServiceImplementacao implements UserDetailsService{
 	            if(usuario == null) {
 	                throw new UsernameNotFoundException("Usuário não encontrado");
 	            }
+
+                // Log the authorities loaded from the database
+                logger.info("Authorities loaded for user {}: {}", email, usuario.getAuthorities());
 	        
 	        return new User(usuario.getUsername(),usuario.getPassword(),true,true,true,true,usuario.getAuthorities());
 	    }

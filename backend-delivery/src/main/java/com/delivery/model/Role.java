@@ -18,7 +18,7 @@ public class Role implements GrantedAuthority {
 
     @Override
     public String getAuthority() {
-        return this.papel;
+        return "ROLE_" + this.papel;
     }
 
     // Getters and Setters

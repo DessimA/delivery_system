@@ -6,7 +6,7 @@
           <header class="base-modal-header">
             <h3 id="modalTitle">{{ title }}</h3>
             <button type="button" class="btn-close" @click="closeModal" aria-label="Close modal">
-              <Icon name="x" />
+              <BaseIcon name="x" />
             </button>
           </header>
 

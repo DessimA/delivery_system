@@ -5,7 +5,7 @@
     @click="$emit('click', $event)"
   >
     <LoadingSpinner v-if="loading" size="sm" />
-    <Icon v-if="icon && !loading" :name="icon" />
+    <BaseIcon v-if="icon && !loading" :name="icon" />
     <span v-if="label">{{ label }}</span>
     <slot v-else></slot>
   </button>

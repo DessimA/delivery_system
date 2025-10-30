@@ -3,6 +3,7 @@ import App from './App.vue';
 import router from './router';
 import { createPinia } from 'pinia';
 import { useAuthStore } from '@/stores/auth';
+import api, { setupAxiosInterceptors } from './plugins/axios'; // Import api and setupAxiosInterceptors
 
 // UI Framework: Bootstrap + BootstrapVueNext
 import { createBootstrap } from 'bootstrap-vue-next';
@@ -17,12 +18,16 @@ import './styles/global.scss';
 const app = createApp(App);
 const pinia = createPinia();
 
-app.use(pinia);
+app.use(pinia); // Pinia is now installed on the app
 
-// Initialize auth store before mounting the app
+// Setup Axios interceptors after Pinia is initialized
+setupAxiosInterceptors();
+
+// Now it's safe to get the authStore instance
 const authStore = useAuthStore();
+
+// Now initialize auth and then mount the app
 authStore.initializeAuth().then(() => {
   app.use(router);
-  app.use(createBootstrap());
   app.mount('#app');
 });

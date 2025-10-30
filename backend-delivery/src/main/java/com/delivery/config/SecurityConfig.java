@@ -64,18 +64,18 @@ public class SecurityConfig {
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**", "/swagger-ui.html").permitAll()
 
                 // Rotas de administrador/restaurante
-                .requestMatchers(HttpMethod.POST, "/api/produtos").hasAnyRole("ADMIN", "RESTAURANT")
-                .requestMatchers(HttpMethod.PUT, "/api/produtos/**").hasAnyRole("ADMIN", "RESTAURANT")
-                .requestMatchers(HttpMethod.DELETE, "/api/produtos/**").hasAnyRole("ADMIN", "RESTAURANT")
-                .requestMatchers(HttpMethod.GET, "/api/pedidos").hasRole("ADMIN")
-                .requestMatchers("/api/restaurante/**").hasRole("RESTAURANT")
+                .requestMatchers(HttpMethod.POST, "/api/produtos").hasAnyAuthority("ROLE_ADMIN", "ROLE_RESTAURANT")
+                .requestMatchers(HttpMethod.PUT, "/api/produtos/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_RESTAURANT")
+                .requestMatchers(HttpMethod.DELETE, "/api/produtos/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_RESTAURANT")
+                .requestMatchers(HttpMethod.GET, "/api/pedidos").hasAuthority("ROLE_ADMIN")
+                .requestMatchers("/api/restaurante/**").hasAuthority("ROLE_RESTAURANT")
 
                 // Rotas de entregador
-                .requestMatchers(HttpMethod.POST, "/api/entregas").hasRole("ADMIN") // Apenas ADMIN cria entregas
-                .requestMatchers(HttpMethod.GET, "/api/entregas/disponiveis").hasRole("DELIVERY")
-                .requestMatchers(HttpMethod.POST, "/api/entregas/{id}/aceitar").hasRole("DELIVERY")
-                .requestMatchers(HttpMethod.PUT, "/api/entregas/{id}/status").hasAnyRole("ADMIN", "DELIVERY")
-                .requestMatchers(HttpMethod.GET, "/api/entregas/minhas").hasRole("DELIVERY")
+                .requestMatchers(HttpMethod.POST, "/api/entregas").hasAuthority("ROLE_ADMIN") // Apenas ADMIN cria entregas
+                .requestMatchers(HttpMethod.GET, "/api/entregas/disponiveis").hasAuthority("ROLE_DELIVERY")
+                .requestMatchers(HttpMethod.POST, "/api/entregas/{id}/aceitar").hasAuthority("ROLE_DELIVERY")
+                .requestMatchers(HttpMethod.PUT, "/api/entregas/{id}/status").hasAnyAuthority("ROLE_ADMIN", "ROLE_DELIVERY")
+                .requestMatchers(HttpMethod.GET, "/api/entregas/minhas").hasAuthority("ROLE_DELIVERY")
 
                 // Rotas de pagamento
                 .requestMatchers(HttpMethod.POST, "/api/pagamentos/processar").authenticated()

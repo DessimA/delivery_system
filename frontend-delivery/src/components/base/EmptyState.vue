@@ -1,6 +1,6 @@
 <template>
   <div class="empty-state">
-    <Icon v-if="icon" :name="icon" class="empty-state-icon" />
+    <BaseIcon v-if="icon" :name="icon" class="empty-state-icon" />
     <h3 class="empty-state-title">{{ title }}</h3>
     <p class="empty-state-description">{{ description }}</p>
     <BaseButton

@@ -2,7 +2,7 @@
   <div :class="['base-input-wrapper', { 'has-error': error }]">
     <label v-if="label" :for="id" class="base-input-label">{{ label }}</label>
     <div class="base-input-control">
-      <Icon v-if="icon" :name="icon" class="base-input-icon" />
+      <BaseIcon v-if="icon" :name="icon" class="base-input-icon" />
       <input
         :id="id"
         :type="type"

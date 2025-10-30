@@ -7,11 +7,11 @@
         :class="['notification-item', `notification-item--${notification.type}`]"
       >
         <div class="notification-content">
-          <Icon :name="getIcon(notification.type)" class="notification-icon" />
+          <BaseIcon :name="getIcon(notification.type)" class="notification-icon" />
           <p>{{ notification.message }}</p>
         </div>
         <button class="close-btn" @click="removeNotification(notification.id)">
-          <Icon name="x" />
+          <BaseIcon name="x" />
         </button>
       </div>
     </transition-group>

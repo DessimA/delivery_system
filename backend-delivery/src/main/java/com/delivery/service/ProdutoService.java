@@ -66,11 +66,22 @@ public class ProdutoService {
         Produto produto = produtoMapper.toEntity(produtoRequestDTO);
 
         Usuario usuarioLogado = getAuthenticatedUser();
-        Estabelecimento estabelecimento = usuarioLogado.getEstabelecimento();
-        if (estabelecimento == null) {
-            throw new IllegalStateException("Usuário não tem um estabelecimento associado para criar produtos.");
+        
+        // Verifica se o usuário tem a role ADMIN
+        boolean isAdmin = usuarioLogado.getAuthorities().stream()
+                .anyMatch(auth -> auth.getAuthority().equals(ROLE_ADMIN));
+        
+        // Se não for ADMIN, exige estabelecimento
+        if (!isAdmin) {
+            Estabelecimento estabelecimento = usuarioLogado.getEstabelecimento();
+            if (estabelecimento == null) {
+                throw new IllegalStateException("Usuário não tem um estabelecimento associado para criar produtos.");
+            }
+            produto.setEstabelecimento(estabelecimento);
+        } else {
+            // Admin pode criar produtos sem estabelecimento associado
+            produto.setEstabelecimento(usuarioLogado.getEstabelecimento()); // Pode ser null
         }
-        produto.setEstabelecimento(estabelecimento);
 
         if (imagem != null && !imagem.isEmpty()) {
             String nomeArquivo = salvarImagem(imagem);
