@@ -22,7 +22,7 @@ O Delivery System é uma plataforma que conecta restaurantes, clientes e entrega
 
 - **Sistema Multi-Restaurante**: Gerenciamento de múltiplos estabelecimentos, cada um com seu próprio cardápio.
 - **Gerenciamento de Produtos**: Restaurantes podem adicionar, editar e remover produtos de seus cardápios, incluindo upload de imagens via Cloudinary.
-- **Pagamento PIX Simulado**: Um fluxo de pagamento PIX completo, com geração de QR Code e simulação de confirmação em tempo real.
+- **Pagamento PIX Simulado**: Um fluxo de pagamento PIX completo, com geração de QR Code e simulação de confirmação em tempo real. **(Problema: 401 Unauthorized na finalização do pedido)**
 - **Sistema de Entregas Automatizado**: Gerenciamento do ciclo de vida da entrega, desde a criação do pedido até a entrega final, com atribuição automática a entregadores disponíveis.
 - **Tracking de Entrega em Tempo Real**: Clientes e entregadores podem acompanhar o status da entrega via WebSockets, com atualizações em tempo real.
 - **Dashboards por Papel**: Interfaces dedicadas para Administradores, Restaurantes e Entregadores.
@@ -80,6 +80,8 @@ Nós criamos um script que automatiza todo o processo para você. Basta dar um d
 - 🎩 **Limpa a casa**: Para e remove quaisquer contêineres de execuções anteriores para garantir um começo limpo.
 - 🏗️ **Constrói tudo**: Cria as imagens Docker para o frontend e o backend. Da primeira vez, isso pode levar alguns minutos, pois ele baixa todas as dependências. Nas próximas, será muito mais rápido!
 - 🚀 **Lança os foguetes**: Inicia os três contêineres (frontend, backend e banco de dados) em modo de desenvolvimento.
+
+> **Atenção**: Atualmente, há um problema conhecido onde a finalização de pedidos pode retornar um erro '401 Unauthorized'. Estamos investigando a causa, que parece estar relacionada à configuração CORS no backend. A funcionalidade de adicionar/remover itens do carrinho está funcionando, mas o fluxo completo de pagamento via PIX ainda está em depuração.
 
 ### 4. Acessando a Aplicação
 
