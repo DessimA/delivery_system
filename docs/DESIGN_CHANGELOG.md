@@ -78,12 +78,20 @@
 - Scrollbar customizada com cores do tema
 - Melhores transições em elementos interativos
 
-### 8. 📱 Responsividade Mantida
+### 8. 📱 Responsividade Aprimorada
 
-Todas as melhorias mantêm a responsividade existente:
+**Melhorias:**
 - Menu mobile funcional
-- Layouts adaptativos
+- Layouts adaptativos para diferentes tamanhos de tela
 - Touch-friendly em dispositivos móveis
+- Implementação de media queries para garantir a adaptação do layout.
+
+### 9. 🔄 Estados de Carregamento e Feedback Visual
+
+**Melhorias:**
+- **Loading States**: Adição de indicadores de carregamento (spinners) em botões e seções que realizam operações assíncronas.
+- **Skeleton Screens**: Implementação de telas de esqueleto (e.g., `RestaurantCardSkeleton`, `OrderCardSkeleton`) para melhorar a percepção de performance durante o carregamento de dados.
+- **Empty States**: Criação de componentes de estado vazio (`EmptyState`) para exibir mensagens amigáveis quando não há dados a serem mostrados (e.g., carrinho vazio, nenhum pedido).
 
 ## Paleta de Cores Atualizada
 
@@ -101,16 +109,17 @@ Todas as melhorias mantêm a responsividade existente:
 
 ## Próximos Passos Sugeridos
 
-1. **Feedback Visual:** Adicionar mais micro-interações (loading states, animations)
-2. **Acessibilidade:** Verificar contraste WCAG AAA em todos os componentes
-3. **Dark Mode:** Implementar tema escuro opcional
-4. **Componentes Base:** Garantir que BaseButton, BaseInput seguem o mesmo padrão visual
-5. **Testes:** Verificar funcionamento em diferentes navegadores e dispositivos
+1. **Feedback Visual Adicional:** Adicionar mais micro-interações e animações sutis para aprimorar a experiência do usuário.
+2. **Acessibilidade:** Realizar uma auditoria completa para garantir conformidade com WCAG AAA em todos os componentes.
+3. **Dark Mode:** Implementar um tema escuro opcional para a aplicação.
+4. **Testes de Compatibilidade:** Verificar funcionamento em diferentes navegadores e dispositivos para garantir a consistência da UI/UX.
 
-## Testes Recomendados
+## Testes Recomendados (Em Andamento)
 
 - [ ] Verificar visibilidade de todos os elementos em tela
 - [ ] Testar navegação com usuário logado vs deslogado
-- [ ] Validar responsividade em mobile/tablet/desktop
+- [X] Validar responsividade em mobile/tablet/desktop
 - [ ] Testar contraste de cores em diferentes telas
 - [ ] Verificar acessibilidade com leitores de tela
+- [X] Testar estados de carregamento (loading, skeleton)
+- [X] Testar estados vazios (empty states)

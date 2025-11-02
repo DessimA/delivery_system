@@ -28,7 +28,7 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Value("${app.cors.allowed-origins}")
+    @Value("${frontend.url}")
     private String[] allowedOrigins;
 
     @Autowired
@@ -61,12 +61,16 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/usuarios/registrar").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/produtos/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/estabelecimentos/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**", "/swagger-ui.html").permitAll()
 
                 // Rotas de administrador/restaurante
                 .requestMatchers(HttpMethod.POST, "/api/produtos").hasAnyAuthority("ROLE_ADMIN", "ROLE_RESTAURANT")
                 .requestMatchers(HttpMethod.PUT, "/api/produtos/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_RESTAURANT")
                 .requestMatchers(HttpMethod.DELETE, "/api/produtos/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_RESTAURANT")
+                .requestMatchers(HttpMethod.POST, "/api/estabelecimentos").hasAuthority("ROLE_ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/estabelecimentos/**").hasAuthority("ROLE_RESTAURANT")
+                .requestMatchers(HttpMethod.DELETE, "/api/estabelecimentos/**").hasAuthority("ROLE_ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/pedidos").hasAuthority("ROLE_ADMIN")
                 .requestMatchers("/api/restaurante/**").hasAuthority("ROLE_RESTAURANT")
 

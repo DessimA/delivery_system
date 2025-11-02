@@ -13,6 +13,7 @@
         </li>
       </ul>
     </div>
+    <slot name="delivery-tracker"></slot>
     <div class="order-actions">
       <BaseButton label="Ver Detalhes" variant="secondary" size="sm" @click="$emit('view-details', order.codigoPedido)" />
       <BaseButton label="Reordenar" variant="primary" size="sm" @click="$emit('reorder', order.codigoPedido)" />

@@ -1,7 +1,7 @@
 <template>
   <teleport to="body">
     <transition name="modal-fade">
-      <div v-if="modelValue" class="base-modal-backdrop" @click.self="closeModal">
+      <div v-if="visible" class="base-modal-backdrop" @click.self="closeModal">
         <div class="base-modal" role="dialog" aria-labelledby="modalTitle" aria-describedby="modalDescription">
           <header class="base-modal-header">
             <h3 id="modalTitle">{{ title }}</h3>
@@ -28,7 +28,7 @@ import { watch } from 'vue';
 import BaseIcon from './BaseIcon.vue';
 
 const props = defineProps({
-  modelValue: {
+  visible: {
     type: Boolean,
     default: false,
   },
@@ -42,16 +42,16 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(['close']);
 
 const closeModal = () => {
   if (props.closeOnBackdropClick) {
-    emit('update:modelValue', false);
+    emit('close');
   }
 };
 
 // Add/remove body-no-scroll class to prevent scrolling when modal is open
-watch(() => props.modelValue, (newValue) => {
+watch(() => props.visible, (newValue) => {
   if (newValue) {
     document.body.classList.add('body-no-scroll');
   } else {
@@ -135,6 +135,17 @@ watch(() => props.modelValue, (newValue) => {
 
 .modal-fade-enter-from,
 .modal-fade-leave-to {
+  opacity: 0;
+}
+
+.modal-fade-enter-active .base-modal,
+.modal-fade-leave-active .base-modal {
+  transition: all 0.3s ease-out;
+}
+
+.modal-fade-enter-from .base-modal,
+.modal-fade-leave-to .base-modal {
+  transform: translateY(-20px);
   opacity: 0;
 }
 

@@ -37,6 +37,7 @@
             size="lg"
             block
             @click="startCheckout"
+            :loading="processing"
           />
         </div>
       </div>
@@ -48,22 +49,8 @@
       description="Adicione produtos para continuar"
       icon="shopping-cart"
       action-label="Ver Produtos"
-      @action="$router.push('/')"
+      @action="$router.push('/restaurants')"
     />
-
-    <!-- Checkout Modal -->
-    <BaseModal v-model="isCheckoutModalOpen" title="Finalizar Pedido">
-      <form @submit.prevent="handlePlaceOrder" class="checkout-form">
-        <BaseInput v-model="checkoutForm.enderecoPedido" label="Endereço de Entrega" placeholder="Digite seu endereço completo" />
-        <hr />
-        <h4>Pagamento</h4>
-        <BaseInput v-model="checkoutForm.numeroCartao" label="Número do Cartão" placeholder="0000 0000 0000 0000" />
-      </form>
-      <template #footer>
-        <BaseButton label="Cancelar" variant="secondary" @click="isCheckoutModalOpen = false" />
-        <BaseButton label="Pagar" :loading="processing" @click="handlePlaceOrder" />
-      </template>
-    </BaseModal>
   </div>
 </template>
 
@@ -93,7 +80,6 @@ const isCheckoutModalOpen = ref(false);
 
 const checkoutForm = reactive({
   enderecoPedido: '',
-  numeroCartao: '',
 });
 
 onMounted(() => {
@@ -120,14 +106,13 @@ const startCheckout = () => {
 };
 
 const handlePlaceOrder = async () => {
-  if (!checkoutForm.enderecoPedido || !checkoutForm.numeroCartao) {
-    addNotification({ type: 'warning', message: 'Por favor, preencha o endereço e os dados de pagamento.' });
+  if (!checkoutForm.enderecoPedido) {
+    addNotification({ type: 'warning', message: 'Por favor, preencha o endereço de entrega.' });
     return;
   }
 
   try {
     await execute(async () => {
-      // 1. Create Order
       const pedidoPayload = {
         enderecoPedido: checkoutForm.enderecoPedido,
         produtoIds: cartStore.items.map(item => item.idProduto),
@@ -135,21 +120,12 @@ const handlePlaceOrder = async () => {
       const pedidoResponse = await api.post('/pedidos', pedidoPayload);
       const novoPedido = pedidoResponse.data;
 
-      // 2. Process Payment
-      const pagamentoPayload = {
-        codigoPedido: novoPedido.codigoPedido,
-        numeroCartao: checkoutForm.numeroCartao,
-      };
-      await api.post('/pagamentos/processar', pagamentoPayload);
-
-      // 3. On Success
-      addNotification({ type: 'success', message: 'Pedido realizado com sucesso!' });
+      addNotification({ type: 'success', message: 'Pedido criado com sucesso! Redirecionando para o pagamento...' });
       cartStore.clearCart();
       isCheckoutModalOpen.value = false;
-      router.push('/orders');
+      router.push({ name: 'CheckoutPix', query: { pedidoId: novoPedido.codigoPedido, valor: novoPedido.valorTotal } });
     });
   } catch (error) {
-    // Global interceptor in api.js will show the error notification
     console.error('Failed to place order:', error);
   }
 };
@@ -163,25 +139,27 @@ const handlePlaceOrder = async () => {
 }
 
 .cart-header {
-  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: var(--spacing-xl);
 
   h1 {
     font-size: var(--font-size-h2);
-    margin-bottom: var(--spacing-xs);
+    margin: 0;
     color: var(--color-text-dark);
   }
 
   p {
     font-size: var(--font-size-md);
-    color: var(--color-dark);
+    color: var(--color-text-muted);
   }
 }
 
 .cart-content {
   display: grid;
   grid-template-columns: 2fr 1fr;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-xl);
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
@@ -195,29 +173,27 @@ const handlePlaceOrder = async () => {
 }
 
 .cart-summary {
-  position: sticky;
-  top: var(--spacing-lg);
-
   .summary-card {
-    background-color: var(--color-background);
+    background-color: var(--color-surface);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-md);
     padding: var(--spacing-lg);
+    box-shadow: var(--shadow-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
 
     .summary-row {
       display: flex;
       justify-content: space-between;
-      margin-bottom: var(--spacing-sm);
       font-size: var(--font-size-md);
       color: var(--color-text-dark);
 
       &.total {
         font-size: var(--font-size-lg);
-        font-weight: var(--font-weight-bold);
-        color: var(--color-primary);
+        font-weight: bold;
         border-top: 1px solid var(--color-border);
-        padding-top: var(--spacing-sm);
-        margin-top: var(--spacing-md);
+        padding-top: var(--spacing-md);
+        margin-top: var(--spacing-sm);
       }
     }
   }

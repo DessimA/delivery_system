@@ -68,6 +68,17 @@ De vez em quando, as coisas podem não sair como o esperado. Aqui estão algumas
         - "3000:5173" # Agora acesse em http://localhost:3000
   ```
 
+### Problema: `Uncaught ReferenceError: global is not defined` no frontend.
+
+- **Causa Provável**: A biblioteca `sockjs-client` tenta acessar a variável `global`, que não existe em ambientes de navegador.
+- **Solução**: Adicione um polyfill para `global` no `vite.config.js`. Certifique-se de que seu `vite.config.js` contenha:
+  ```javascript
+  define: {
+    global: 'globalThis',
+  },
+  ```
+  Após a alteração, reinicie os containers Docker.
+
 ### Problema: Tudo parece quebrado!
 
 - **Causa Provável**: Cache do Docker, volumes antigos ou alguma outra inconsistência.

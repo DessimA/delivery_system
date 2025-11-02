@@ -20,7 +20,7 @@ public class EntregaMapper {
     public EntregaResponseDTO toResponseDTO(Entrega entrega) {
         EntregaResponseDTO dto = new EntregaResponseDTO();
         dto.setId(entrega.getId());
-        dto.setStatus(entrega.getStatus());
+        dto.setStatus(entrega.getStatus().name());
         dto.setEnderecoOrigem(entrega.getEnderecoOrigem());
         dto.setEnderecoDestino(entrega.getEnderecoDestino());
         dto.setTempoEstimado(entrega.getTempoEstimado());

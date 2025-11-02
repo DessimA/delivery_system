@@ -18,21 +18,33 @@
 
 O Delivery System é uma plataforma que conecta restaurantes, clientes e entregadores. Ele oferece uma experiência de usuário fluida, desde a escolha do prato até a entrega, com um backend poderoso e um frontend reativo e moderno.
 
-### Funcionalidades Principais
+### 💡 Recursos Principais ✨
 
-- **Para Clientes**: Navegação no cardápio, carrinho de compras, finalização de pedido e histórico de pedidos.
-- **Para Administradores**: Visão geral do sistema, gerenciamento de produtos e pedidos.
-- **Autenticação**: Sistema seguro baseado em roles (Cliente e Administrador).
-- **Desenvolvimento**: Ambiente Docker com hot-reload para frontend e backend, garantindo máxima produtividade.
+- **Sistema Multi-Restaurante**: Gerenciamento de múltiplos estabelecimentos, cada um com seu próprio cardápio.
+- **Gerenciamento de Produtos**: Restaurantes podem adicionar, editar e remover produtos de seus cardápios, incluindo upload de imagens via Cloudinary.
+- **Pagamento PIX Simulado**: Um fluxo de pagamento PIX completo, com geração de QR Code e simulação de confirmação em tempo real.
+- **Sistema de Entregas Automatizado**: Gerenciamento do ciclo de vida da entrega, desde a criação do pedido até a entrega final, com atribuição automática a entregadores disponíveis.
+- **Tracking de Entrega em Tempo Real**: Clientes e entregadores podem acompanhar o status da entrega via WebSockets, com atualizações em tempo real.
+- **Dashboards por Papel**: Interfaces dedicadas para Administradores, Restaurantes e Entregadores.
+- **Autenticação JWT**: Segurança robusta com autenticação e autorização baseada em tokens.
+- **Frontend Reativo e Responsivo**: Construído com Vue.js 3, oferecendo uma experiência de usuário moderna, responsiva e com animações.
+- **Infraestrutura Dockerizada**: Ambiente de desenvolvimento e produção empacotados em contêineres para fácil configuração e escalabilidade.
+- **Validações de Entrada**: Validações básicas implementadas no backend para garantir a integridade dos dados.
+
+### 📸 Screenshots e GIFs
+
+_Em breve: Imagens e GIFs demonstrativos da aplicação em funcionamento. Atualmente, estamos focados na implementação e testes das funcionalidades principais._
+
 
 ## 🛠️ Tecnologias Utilizadas
 
 | Categoria   | Tecnologia                                                                                                  |
 |-------------|-------------------------------------------------------------------------------------------------------------|
-| **Backend** | Java 17, Spring Boot, Spring Security, JPA/Hibernate, Maven                                                   |
-| **Frontend**| Vue.js 3, Vite, Pinia (para gerenciamento de estado), Vue Router, Sass                                        |
+| **Backend** | Java 17, Spring Boot, Spring Security, JPA/Hibernate, Maven, Cloudinary, WebSockets (STOMP), Lombok, MapStruct, ZXing (QR Code)                   |
+| **Frontend**| Vue.js 3, Vite, Pinia (para gerenciamento de estado), Vue Router, Sass, Axios, SockJS, StompJS                                 |
 | **Banco de Dados** | PostgreSQL                                                                                                  |
 | **Infraestrutura** | Docker, Docker Compose                                                                                      |
+| **Outros** | JWT (JSON Web Tokens), Swagger/OpenAPI                                                              |
 
 ## 🚀 Começando
 
@@ -60,7 +72,7 @@ cd delivery_system
 Nós criamos um script que automatiza todo o processo para você. Basta dar um duplo clique no arquivo:
 
 ```bash
-start-dev.bat
+./start-dev.bat
 ```
 
 **O que este script faz?**
@@ -96,3 +108,4 @@ Para uma exploração mais profunda do projeto, incluindo guias de desenvolvimen
 - ➡️ [**Guia de Desenvolvimento](./docs/DEVELOPMENT_GUIDE.md)**: Dicas e truques para o dia a dia do desenvolvimento, incluindo como o hot-reload funciona.
 - ➡️ [**Planejamento do Projeto](./docs/planejamento.md)**: Entenda a visão completa do projeto, funcionalidades planejadas e arquitetura.
 - ➡️ [**Changelog de Design](./docs/DESIGN_CHANGELOG.md)**: Veja o histórico de melhorias de design que foram implementadas.
+- ➡️ [**Tarefas Concluídas](./docs/TASKS_COMPLETES.md)**: Um registro detalhado das funcionalidades e melhorias implementadas até o momento.

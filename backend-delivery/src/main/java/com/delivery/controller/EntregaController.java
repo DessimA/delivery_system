@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.delivery.model.StatusEntrega;
+
 import java.util.List;
 
 @RestController
@@ -49,7 +51,8 @@ public class EntregaController {
     @PutMapping("/{id}/status")
     @Operation(summary = "Atualiza o status de uma entrega (ADMIN, DELIVERY)")
     public ResponseEntity<EntregaResponseDTO> atualizarStatusEntrega(@PathVariable Long id, @RequestParam String novoStatus) {
-        EntregaResponseDTO entregaAtualizada = entregaService.atualizarStatusEntrega(id, novoStatus);
+        StatusEntrega statusEnum = StatusEntrega.valueOf(novoStatus.toUpperCase());
+        EntregaResponseDTO entregaAtualizada = entregaService.atualizarStatusEntrega(id, statusEnum);
         return ResponseEntity.ok(entregaAtualizada);
     }
 

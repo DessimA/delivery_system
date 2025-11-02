@@ -7,6 +7,10 @@
   padding: 0;
 }
 
+html {
+  font-size: 16px; // Base for rem units
+}
+
 body {
   font-family: var(--font-primary);
   font-size: var(--font-size-md);
@@ -15,6 +19,39 @@ body {
   background-color: var(--color-background);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Media Queries para Responsividade */
+
+// Mobile (até 767px)
+@media (max-width: 767px) {
+  html {
+    font-size: 14px; // Reduz a base para telas menores
+  }
+
+  h1 { font-size: var(--font-size-h2); }
+  h2 { font-size: var(--font-size-h3); }
+  h3 { font-size: var(--font-size-h4); }
+  h4 { font-size: var(--font-size-h5); }
+
+  .container {
+    padding: 0 var(--spacing-sm);
+  }
+}
+
+// Tablet (768px a 1023px)
+@media (min-width: 768px) and (max-width: 1023px) {
+  html {
+    font-size: 15px; // Ajusta a base para tablets
+  }
+
+  h1 { font-size: var(--font-size-h1); }
+  h2 { font-size: var(--font-size-h2); }
+  h3 { font-size: var(--font-size-h3); }
+
+  .container {
+    padding: 0 var(--spacing-md);
+  }
 }
 
 h1, h2, h3, h4, h5, h6 {

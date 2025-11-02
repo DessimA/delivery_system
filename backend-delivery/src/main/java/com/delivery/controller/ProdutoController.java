@@ -6,6 +6,7 @@ import com.delivery.service.ProdutoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -47,21 +48,21 @@ public class ProdutoController {
 
     @Operation(summary = "Cria um novo produto (ADMIN, RESTAURANT)", security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping
-    public ResponseEntity<ProdutoResponseDTO> criarProduto(@RequestBody ProdutoRequestDTO produtoRequestDTO) {
+    public ResponseEntity<ProdutoResponseDTO> criarProduto(@Valid @RequestBody ProdutoRequestDTO produtoRequestDTO) {
         ProdutoResponseDTO novoProduto = produtoService.criarProduto(produtoRequestDTO, null);
         return ResponseEntity.status(HttpStatus.CREATED).body(novoProduto);
     }
     
     @Operation(summary = "Cria um novo produto com imagem (ADMIN, RESTAURANT)", security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping(consumes = "multipart/form-data")
-    public ResponseEntity<ProdutoResponseDTO> criarProdutoComImagem(@RequestPart("produto") ProdutoRequestDTO produtoRequestDTO, @RequestPart(value = "imagem", required = false) MultipartFile imagem) {
+    public ResponseEntity<ProdutoResponseDTO> criarProdutoComImagem(@Valid @RequestPart("produto") ProdutoRequestDTO produtoRequestDTO, @RequestPart(value = "imagem", required = false) MultipartFile imagem) {
         ProdutoResponseDTO novoProduto = produtoService.criarProduto(produtoRequestDTO, imagem);
         return ResponseEntity.status(HttpStatus.CREATED).body(novoProduto);
     }
 
     @Operation(summary = "Atualiza um produto existente (ADMIN, RESTAURANT)", security = @SecurityRequirement(name = "bearerAuth"))
     @PutMapping("/{id}")
-    public ResponseEntity<ProdutoResponseDTO> atualizarProduto(@PathVariable Long id, @RequestBody ProdutoRequestDTO produtoRequestDTO) {
+    public ResponseEntity<ProdutoResponseDTO> atualizarProduto(@PathVariable Long id, @Valid @RequestBody ProdutoRequestDTO produtoRequestDTO) {
         // TODO: A lógica de 'não encontrado' também deveria ser tratada no serviço.
         ProdutoResponseDTO produtoAtualizado = produtoService.atualizarProduto(id, produtoRequestDTO);
         if (produtoAtualizado != null) {

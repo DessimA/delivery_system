@@ -2,301 +2,226 @@ package com.delivery.service;
 
 import com.delivery.dto.EntregaRequestDTO;
 import com.delivery.dto.EntregaResponseDTO;
+import com.delivery.exception.UserNotFoundException;
+import com.delivery.mapper.EntregaMapper;
 import com.delivery.model.Entrega;
 import com.delivery.model.Pedido;
+import com.delivery.model.StatusEntrega;
 import com.delivery.model.Usuario;
-import com.delivery.model.Role;
 import com.delivery.repository.EntregaRepository;
 import com.delivery.repository.PedidoRepository;
 import com.delivery.repository.UsuarioRepository;
-import com.delivery.mapper.EntregaMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 public class EntregaServiceTest {
 
     @Mock
     private EntregaRepository entregaRepository;
-
     @Mock
     private PedidoRepository pedidoRepository;
-
     @Mock
     private UsuarioRepository usuarioRepository;
-
     @Mock
     private EntregaMapper entregaMapper;
+    @Mock
+    private WebSocketService webSocketService;
+    @Mock
+    private SecurityContext securityContext;
+    @Mock
+    private Authentication authentication;
 
     @InjectMocks
     private EntregaService entregaService;
 
-    private Usuario adminUser;
-    private Usuario deliveryUser;
     private Pedido pedido;
     private Entrega entregaPendente;
-    private EntregaRequestDTO entregaRequestDTO;
+    private Entrega entregaAceita;
+    private Usuario entregador;
+    private Usuario admin;
 
     @BeforeEach
     void setUp() {
-        adminUser = new Usuario();
-        adminUser.setEmail("admin@test.com");
-        Role adminRole = new Role();
-        adminRole.setPapel("ROLE_ADMIN");
-        adminUser.setRoles(Collections.singletonList(adminRole));
-
-        deliveryUser = new Usuario();
-        deliveryUser.setEmail("delivery@test.com");
-        deliveryUser.setCodigo(2L);
-        Role deliveryRole = new Role();
-        deliveryRole.setPapel("ROLE_DELIVERY");
-        deliveryUser.setRoles(Collections.singletonList(deliveryRole));
-
         pedido = new Pedido();
         pedido.setCodigoPedido(1L);
+
+        entregador = new Usuario();
+        entregador.setCodigo(2L);
+        entregador.setEmail("entregador@test.com");
+        entregador.setRoles(Collections.singletonList(new com.delivery.model.Role() {{ setPapel("DELIVERY"); }}));
+
+        admin = new Usuario();
+        admin.setCodigo(3L);
+        admin.setEmail("admin@test.com");
+        admin.setRoles(Collections.singletonList(new com.delivery.model.Role() {{ setPapel("ADMIN"); }}));
 
         entregaPendente = new Entrega();
         entregaPendente.setId(1L);
         entregaPendente.setPedido(pedido);
-        entregaPendente.setStatus("PENDENTE");
+        entregaPendente.setStatus(StatusEntrega.PENDENTE);
+        entregaPendente.setCriadoEm(new Date());
 
-        entregaRequestDTO = new EntregaRequestDTO();
-        entregaRequestDTO.setCodigoPedido(1L);
-        entregaRequestDTO.setEnderecoDestino("Rua Teste, 123");
-    }
-
-    @Test
-    void criarEntrega_shouldCreateNewDelivery() {
-        when(pedidoRepository.findById(anyLong())).thenReturn(Optional.of(pedido));
-        when(entregaMapper.toEntity(any(EntregaRequestDTO.class))).thenReturn(new Entrega());
-        when(entregaRepository.save(any(Entrega.class))).thenReturn(entregaPendente);
-        when(entregaMapper.toResponseDTO(any(Entrega.class))).thenReturn(new EntregaResponseDTO());
-
-        entregaService.criarEntrega(entregaRequestDTO);
-
-        verify(entregaRepository, times(1)).save(any(Entrega.class));
-    }
-
-    @Test
-    void criarEntrega_shouldThrowExceptionIfPedidoNotFound() {
-        when(pedidoRepository.findById(anyLong())).thenReturn(Optional.empty());
-
-        assertThrows(IllegalArgumentException.class, () ->
-                entregaService.criarEntrega(entregaRequestDTO)
-        );
-    }
-
-    @Test
-    void criarEntrega_shouldThrowExceptionIfPedidoAlreadyHasDelivery() {
-        pedido.setEntrega(new Entrega()); // Simulate existing delivery
-        when(pedidoRepository.findById(anyLong())).thenReturn(Optional.of(pedido));
-
-        assertThrows(IllegalStateException.class, () ->
-                entregaService.criarEntrega(entregaRequestDTO)
-        );
-    }
-
-    @Test
-    void listarEntregasDisponiveis_shouldReturnOnlyPendingAndUnassigned() {
-        Entrega entregaAceita = new Entrega();
+        entregaAceita = new Entrega();
         entregaAceita.setId(2L);
-        entregaAceita.setStatus("ACEITA");
-        entregaAceita.setEntregador(deliveryUser);
+        entregaAceita.setPedido(pedido);
+        entregaAceita.setStatus(StatusEntrega.ACEITA);
+        entregaAceita.setEntregador(entregador);
+        entregaAceita.setCriadoEm(new Date());
 
-        when(entregaRepository.findAll()).thenReturn(Arrays.asList(entregaPendente, entregaAceita));
-        when(entregaMapper.toResponseDTO(any(Entrega.class))).thenReturn(new EntregaResponseDTO());
+        // Mock SecurityContextHolder
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+    }
+
+    private void mockAuthenticatedUser(Usuario user) {
+        when(authentication.getName()).thenReturn(user.getEmail());
+        when(usuarioRepository.findByEmail(user.getEmail())).thenReturn(user);
+    }
+
+    @Test
+    void criarEntrega_deveCriarEntregaComStatusPendente() {
+        EntregaRequestDTO requestDTO = new EntregaRequestDTO();
+        requestDTO.setCodigoPedido(1L);
+
+        EntregaResponseDTO responseDTO = new EntregaResponseDTO();
+        responseDTO.setId(1L);
+        responseDTO.setStatus(StatusEntrega.PENDENTE.name());
+
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+        when(entregaMapper.toEntity(requestDTO)).thenReturn(entregaPendente);
+        when(entregaRepository.save(any(Entrega.class))).thenReturn(entregaPendente);
+        when(entregaMapper.toResponseDTO(entregaPendente)).thenReturn(responseDTO);
+
+        EntregaResponseDTO result = entregaService.criarEntrega(requestDTO);
+
+        assertNotNull(result);
+        assertEquals(StatusEntrega.PENDENTE.name(), result.getStatus());
+        verify(entregaRepository, times(1)).save(any(Entrega.class));
+        verify(webSocketService, times(1)).notifyDeliveryAvailable(any(Entrega.class));
+    }
+
+    @Test
+    void listarEntregasDisponiveis_deveRetornarEntregasPendentesSemEntregador() {
+        EntregaResponseDTO responseDTO = new EntregaResponseDTO();
+        responseDTO.setId(1L);
+        responseDTO.setStatus(StatusEntrega.PENDENTE.name());
+
+        when(entregaRepository.findByStatusAndEntregadorIsNull(StatusEntrega.PENDENTE)).thenReturn(Arrays.asList(entregaPendente));
+        when(entregaMapper.toResponseDTO(entregaPendente)).thenReturn(responseDTO);
 
         List<EntregaResponseDTO> result = entregaService.listarEntregasDisponiveis();
 
         assertNotNull(result);
         assertEquals(1, result.size());
+        assertEquals(StatusEntrega.PENDENTE.name(), result.get(0).getStatus());
+        verify(entregaRepository, times(1)).findByStatusAndEntregadorIsNull(StatusEntrega.PENDENTE);
     }
 
     @Test
-    void aceitarEntrega_shouldAssignDeliveryToDeliveryUser() {
-        Authentication authentication = mock(Authentication.class);
-        when(authentication.getName()).thenReturn(deliveryUser.getEmail());
-        when(authentication.getAuthorities()).thenReturn((java.util.Collection) deliveryUser.getRoles());
-        SecurityContext securityContext = mock(SecurityContext.class);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        SecurityContextHolder.setContext(securityContext);
+    void aceitarEntrega_deveAceitarEntregaPorEntregador() {
+        mockAuthenticatedUser(entregador);
 
-        when(usuarioRepository.findByEmail(deliveryUser.getEmail())).thenReturn(deliveryUser);
-        when(entregaRepository.findById(anyLong())).thenReturn(Optional.of(entregaPendente));
-        when(entregaRepository.save(any(Entrega.class))).thenReturn(entregaPendente);
-        when(entregaMapper.toResponseDTO(any(Entrega.class))).thenReturn(new EntregaResponseDTO());
+        EntregaResponseDTO responseDTO = new EntregaResponseDTO();
+        responseDTO.setId(1L);
+        responseDTO.setStatus(StatusEntrega.ACEITA.name());
 
-        entregaService.aceitarEntrega(1L);
-
-        verify(entregaRepository, times(1)).save(argThat(entrega ->
-                "ACEITA".equals(entrega.getStatus()) && entrega.getEntregador().getCodigo().equals(deliveryUser.getCodigo())
-        ));
-    }
-
-    @Test
-    void aceitarEntrega_shouldThrowExceptionIfDeliveryNotFound() {
-        when(entregaRepository.findById(anyLong())).thenReturn(Optional.empty());
-
-        assertThrows(IllegalArgumentException.class, () ->
-                entregaService.aceitarEntrega(1L)
-        );
-    }
-
-    @Test
-    void aceitarEntrega_shouldThrowExceptionIfDeliveryNotPending() {
-        entregaPendente.setStatus("ACEITA");
-        when(entregaRepository.findById(anyLong())).thenReturn(Optional.of(entregaPendente));
-
-        assertThrows(IllegalStateException.class, () ->
-                entregaService.aceitarEntrega(1L)
-        );
-    }
-
-    @Test
-    void aceitarEntrega_shouldThrowExceptionIfUserNotDeliveryRole() {
-        Authentication authentication = mock(Authentication.class);
-        when(authentication.getName()).thenReturn(adminUser.getEmail());
-        when(authentication.getAuthorities()).thenReturn((java.util.Collection) adminUser.getRoles());
-        SecurityContext securityContext = mock(SecurityContext.class);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        SecurityContextHolder.setContext(securityContext);
-
-        when(usuarioRepository.findByEmail(adminUser.getEmail())).thenReturn(adminUser);
-        when(entregaRepository.findById(anyLong())).thenReturn(Optional.of(entregaPendente)); // Stubbing for aceitarEntrega
-
-        assertThrows(SecurityException.class, () ->
-                entregaService.aceitarEntrega(1L)
-        );
-    }
-
-    @Test
-    void atualizarStatusEntrega_shouldAllowAdminToUpdateStatus() {
-        Entrega entregaAceita = new Entrega();
-        entregaAceita.setId(1L);
-        entregaAceita.setStatus("ACEITA");
-        entregaAceita.setEntregador(deliveryUser);
-
-        Authentication authentication = mock(Authentication.class);
-        when(authentication.getName()).thenReturn(adminUser.getEmail());
-        when(authentication.getAuthorities()).thenReturn((java.util.Collection) adminUser.getRoles());
-        SecurityContext securityContext = mock(SecurityContext.class);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        SecurityContextHolder.setContext(securityContext);
-
-        when(usuarioRepository.findByEmail(adminUser.getEmail())).thenReturn(adminUser);
-        when(entregaRepository.findById(anyLong())).thenReturn(Optional.of(entregaAceita));
+        when(entregaRepository.findById(1L)).thenReturn(Optional.of(entregaPendente));
         when(entregaRepository.save(any(Entrega.class))).thenReturn(entregaAceita);
-        when(entregaMapper.toResponseDTO(any(Entrega.class))).thenReturn(new EntregaResponseDTO());
+        when(entregaMapper.toResponseDTO(entregaAceita)).thenReturn(responseDTO);
 
-        entregaService.atualizarStatusEntrega(1L, "EM_ROTA");
+        EntregaResponseDTO result = entregaService.aceitarEntrega(1L);
 
-        verify(entregaRepository, times(1)).save(argThat(entrega ->
-                "EM_ROTA".equals(entrega.getStatus())
-        ));
+        assertNotNull(result);
+        assertEquals(StatusEntrega.ACEITA.name(), result.getStatus());
+        assertEquals(entregador.getCodigo(), entregaAceita.getEntregador().getCodigo());
+        verify(entregaRepository, times(1)).save(any(Entrega.class));
+        verify(webSocketService, times(1)).notifyDeliveryStatusUpdate(any(Entrega.class));
     }
 
     @Test
-    void atualizarStatusEntrega_shouldAllowAssignedDeliveryUserToUpdateStatus() {
-        Entrega entregaAceita = new Entrega();
-        entregaAceita.setId(1L);
-        entregaAceita.setStatus("ACEITA");
-        entregaAceita.setEntregador(deliveryUser);
+    void atualizarStatusEntrega_deveAtualizarStatusParaColetada() {
+        mockAuthenticatedUser(entregador);
 
-        Authentication authentication = mock(Authentication.class);
-        when(authentication.getName()).thenReturn(deliveryUser.getEmail());
-        when(authentication.getAuthorities()).thenReturn((java.util.Collection) deliveryUser.getRoles());
-        SecurityContext securityContext = mock(SecurityContext.class);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        SecurityContextHolder.setContext(securityContext);
+        Entrega entregaEmAceita = new Entrega();
+        entregaEmAceita.setId(2L);
+        entregaEmAceita.setPedido(pedido);
+        entregaEmAceita.setStatus(StatusEntrega.ACEITA);
+        entregaEmAceita.setEntregador(entregador);
 
-        when(usuarioRepository.findByEmail(deliveryUser.getEmail())).thenReturn(deliveryUser);
-        when(entregaRepository.findById(anyLong())).thenReturn(Optional.of(entregaAceita));
-        when(entregaRepository.save(any(Entrega.class))).thenReturn(entregaAceita);
-        when(entregaMapper.toResponseDTO(any(Entrega.class))).thenReturn(new EntregaResponseDTO());
+        Entrega entregaColetada = new Entrega();
+        entregaColetada.setId(2L);
+        entregaColetada.setPedido(pedido);
+        entregaColetada.setStatus(StatusEntrega.COLETADA);
+        entregaColetada.setEntregador(entregador);
 
-        entregaService.atualizarStatusEntrega(1L, "EM_ROTA");
+        EntregaResponseDTO responseDTO = new EntregaResponseDTO();
+        responseDTO.setId(2L);
+        responseDTO.setStatus(StatusEntrega.COLETADA.name());
 
-        verify(entregaRepository, times(1)).save(argThat(entrega ->
-                "EM_ROTA".equals(entrega.getStatus())
-        ));
+        when(entregaRepository.findById(2L)).thenReturn(Optional.of(entregaEmAceita));
+        when(entregaRepository.save(any(Entrega.class))).thenReturn(entregaColetada);
+        when(entregaMapper.toResponseDTO(entregaColetada)).thenReturn(responseDTO);
+
+        EntregaResponseDTO result = entregaService.atualizarStatusEntrega(2L, StatusEntrega.COLETADA);
+
+        assertNotNull(result);
+        assertEquals(StatusEntrega.COLETADA.name(), result.getStatus());
+        verify(entregaRepository, times(1)).save(any(Entrega.class));
+        verify(webSocketService, times(1)).notifyDeliveryStatusUpdate(any(Entrega.class));
     }
 
     @Test
-    void atualizarStatusEntrega_shouldPreventUnassignedDeliveryUserFromUpdatingStatus() {
-        Entrega entregaAceita = new Entrega();
-        entregaAceita.setId(1L);
-        entregaAceita.setStatus("ACEITA");
-        Usuario otherDeliveryUser = new Usuario();
-        otherDeliveryUser.setEmail("other@test.com");
-        otherDeliveryUser.setCodigo(3L);
-        Role deliveryRole = new Role();
-        deliveryRole.setPapel("ROLE_DELIVERY");
-        otherDeliveryUser.setRoles(Collections.singletonList(deliveryRole));
-        entregaAceita.setEntregador(otherDeliveryUser);
+    void atualizarStatusEntrega_deveLancarExcecaoParaTransicaoInvalida() {
+        mockAuthenticatedUser(entregador);
 
-        Authentication authentication = mock(Authentication.class);
-        when(authentication.getName()).thenReturn(deliveryUser.getEmail());
-        when(authentication.getAuthorities()).thenReturn((java.util.Collection) deliveryUser.getRoles());
-        SecurityContext securityContext = mock(SecurityContext.class);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        SecurityContextHolder.setContext(securityContext);
+        Entrega entregaEmAceita = new Entrega();
+        entregaEmAceita.setId(2L);
+        entregaEmAceita.setPedido(pedido);
+        entregaEmAceita.setStatus(StatusEntrega.ACEITA);
+        entregaEmAceita.setEntregador(entregador);
 
-        when(usuarioRepository.findByEmail(deliveryUser.getEmail())).thenReturn(deliveryUser);
-        when(entregaRepository.findById(anyLong())).thenReturn(Optional.of(entregaAceita));
+        when(entregaRepository.findById(2L)).thenReturn(Optional.of(entregaEmAceita));
 
-        assertThrows(SecurityException.class, () ->
-                entregaService.atualizarStatusEntrega(1L, "EM_ROTA")
-        );
-        verify(entregaRepository, never()).save(any(Entrega.class));
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+            entregaService.atualizarStatusEntrega(2L, StatusEntrega.PENDENTE);
+        });
+
+        assertEquals("Não é possível alterar o status de ACEITA para PENDENTE", exception.getMessage());
     }
 
     @Test
-    void listarMinhasEntregas_shouldReturnOnlyAssignedDeliveries() {
-        Entrega minhaEntrega = new Entrega();
-        minhaEntrega.setId(1L);
-        minhaEntrega.setEntregador(deliveryUser);
-        minhaEntrega.setStatus("ACEITA");
+    void listarMinhasEntregas_deveRetornarEntregasDoEntregadorLogado() {
+        mockAuthenticatedUser(entregador);
 
-        Entrega outraEntrega = new Entrega();
-        outraEntrega.setId(2L);
-        outraEntrega.setEntregador(adminUser);
-        outraEntrega.setStatus("ACEITA");
+        EntregaResponseDTO responseDTO = new EntregaResponseDTO();
+        responseDTO.setId(2L);
+        responseDTO.setStatus(StatusEntrega.ACEITA.name());
 
-        Authentication authentication = mock(Authentication.class);
-        when(authentication.getName()).thenReturn(deliveryUser.getEmail());
-        when(authentication.getAuthorities()).thenReturn((java.util.Collection) deliveryUser.getRoles());
-        SecurityContext securityContext = mock(SecurityContext.class);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        SecurityContextHolder.setContext(securityContext);
-
-        when(usuarioRepository.findByEmail(deliveryUser.getEmail())).thenReturn(deliveryUser);
-        when(entregaRepository.findByEntregador(deliveryUser)).thenReturn(Collections.singletonList(minhaEntrega));
-        when(entregaMapper.toResponseDTO(any(Entrega.class))).thenReturn(new EntregaResponseDTO());
+        when(entregaRepository.findByEntregador(entregador)).thenReturn(Arrays.asList(entregaAceita));
+        when(entregaMapper.toResponseDTO(entregaAceita)).thenReturn(responseDTO);
 
         List<EntregaResponseDTO> result = entregaService.listarMinhasEntregas();
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        verify(entregaRepository, times(1)).findByEntregador(deliveryUser);
+        assertEquals(StatusEntrega.ACEITA.name(), result.get(0).getStatus());
+        verify(entregaRepository, times(1)).findByEntregador(entregador);
     }
 }

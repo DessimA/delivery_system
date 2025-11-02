@@ -2,18 +2,18 @@ package com.delivery.service;
 
 import com.delivery.dto.EntregaRequestDTO;
 import com.delivery.dto.EntregaResponseDTO;
+import com.delivery.exception.UserNotFoundException;
 import com.delivery.mapper.EntregaMapper;
 import com.delivery.model.Entrega;
 import com.delivery.model.Pedido;
+import com.delivery.model.StatusEntrega;
 import com.delivery.model.Usuario;
 import com.delivery.repository.EntregaRepository;
 import com.delivery.repository.PedidoRepository;
 import com.delivery.repository.UsuarioRepository;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import com.delivery.exception.UserNotFoundException;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,10 +21,6 @@ import java.util.stream.Collectors;
 @Service
 public class EntregaService {
 
-    // Constants to avoid magic strings
-    private static final String STATUS_PENDENTE = "PENDENTE";
-    private static final String STATUS_ACEITA = "ACEITA";
-    private static final String STATUS_ENTREGUE = "ENTREGUE";
     private static final String ROLE_DELIVERY = "ROLE_DELIVERY";
     private static final String ROLE_ADMIN = "ROLE_ADMIN";
 
@@ -32,16 +28,16 @@ public class EntregaService {
     private final PedidoRepository pedidoRepository;
     private final UsuarioRepository usuarioRepository;
     private final EntregaMapper entregaMapper;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final WebSocketService webSocketService;
 
     public EntregaService(EntregaRepository entregaRepository, PedidoRepository pedidoRepository,
                           UsuarioRepository usuarioRepository, EntregaMapper entregaMapper,
-                          SimpMessagingTemplate messagingTemplate) {
+                          WebSocketService webSocketService) {
         this.entregaRepository = entregaRepository;
         this.pedidoRepository = pedidoRepository;
         this.usuarioRepository = usuarioRepository;
         this.entregaMapper = entregaMapper;
-        this.messagingTemplate = messagingTemplate;
+        this.webSocketService = webSocketService;
     }
 
     public EntregaResponseDTO criarEntrega(EntregaRequestDTO entregaDTO) {
@@ -54,28 +50,25 @@ public class EntregaService {
 
         Entrega entrega = entregaMapper.toEntity(entregaDTO);
         entrega.setPedido(pedido);
-        entrega.setStatus(STATUS_PENDENTE);
+        entrega.setStatus(StatusEntrega.PENDENTE);
         entrega.setCriadoEm(new Date());
 
         Entrega entregaSalva = entregaRepository.save(entrega);
+        webSocketService.notifyDeliveryAvailable(entregaSalva);
         return entregaMapper.toResponseDTO(entregaSalva);
     }
 
     public List<EntregaResponseDTO> listarEntregasDisponiveis() {
-        // TODO: Otimizar esta query. Em vez de buscar tudo e filtrar na memória,
-        // criar um método no repository: findByStatusAndEntregadorIsNull(String status)
-        return entregaRepository.findAll().stream()
-                .filter(e -> STATUS_PENDENTE.equals(e.getStatus()) && e.getEntregador() == null)
+        return entregaRepository.findByStatusAndEntregadorIsNull(StatusEntrega.PENDENTE).stream()
                 .map(entregaMapper::toResponseDTO)
                 .collect(Collectors.toList());
     }
 
-    // TODO: Usar anotações de segurança do Spring para validação de role. Ex: @PreAuthorize("hasRole('DELIVERY')")
     public EntregaResponseDTO aceitarEntrega(Long id) {
         Entrega entrega = entregaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Entrega não encontrada."));
 
-        if (!STATUS_PENDENTE.equals(entrega.getStatus()) || entrega.getEntregador() != null) {
+        if (entrega.getStatus() != StatusEntrega.PENDENTE || entrega.getEntregador() != null) {
             throw new IllegalStateException("Esta entrega não está disponível para ser aceita.");
         }
 
@@ -85,26 +78,28 @@ public class EntregaService {
         }
 
         entrega.setEntregador(entregador);
-        entrega.setStatus(STATUS_ACEITA);
+        entrega.setStatus(StatusEntrega.ACEITA);
         Entrega entregaAtualizada = entregaRepository.save(entrega);
+        webSocketService.notifyDeliveryStatusUpdate(entregaAtualizada);
         return entregaMapper.toResponseDTO(entregaAtualizada);
     }
 
-    public EntregaResponseDTO atualizarStatusEntrega(Long id, String novoStatus) {
+    public EntregaResponseDTO atualizarStatusEntrega(Long id, StatusEntrega novoStatus) {
         Entrega entrega = entregaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Entrega não encontrada."));
 
         Usuario usuarioLogado = getAuthenticatedUser();
         validarAutorizacaoParaAtualizarStatus(entrega, usuarioLogado);
+        validarTransicaoStatus(entrega.getStatus(), novoStatus);
 
         entrega.setStatus(novoStatus);
-        if (STATUS_ENTREGUE.equals(novoStatus)) {
+        if (novoStatus == StatusEntrega.ENTREGUE) {
             entrega.setEntregueEm(new Date());
         }
 
         Entrega entregaAtualizada = entregaRepository.save(entrega);
 
-        enviarNotificacaoDeStatus(entregaAtualizada);
+        webSocketService.notifyDeliveryStatusUpdate(entregaAtualizada);
 
         return entregaMapper.toResponseDTO(entregaAtualizada);
     }
@@ -128,12 +123,35 @@ public class EntregaService {
         }
     }
 
-    private void enviarNotificacaoDeStatus(Entrega entrega) {
-        if (entrega.getPedido() != null && entrega.getPedido().getCodigoPedido() != null) {
-            String topico = "/topic/pedidos/" + entrega.getPedido().getCodigoPedido();
-            String mensagem = String.format("Status do seu pedido %d atualizado para: %s",
-                    entrega.getPedido().getCodigoPedido(), entrega.getStatus());
-            messagingTemplate.convertAndSend(topico, mensagem);
+    private void validarTransicaoStatus(StatusEntrega statusAtual, StatusEntrega novoStatus) {
+        if (statusAtual == novoStatus) {
+            return; // Nenhuma alteração
+        }
+
+        switch (statusAtual) {
+            case PENDENTE:
+                if (novoStatus != StatusEntrega.ACEITA) {
+                    throw new IllegalStateException("Não é possível alterar o status de PENDENTE para " + novoStatus);
+                }
+                break;
+            case ACEITA:
+                if (novoStatus != StatusEntrega.COLETADA) {
+                    throw new IllegalStateException("Não é possível alterar o status de ACEITA para " + novoStatus);
+                }
+                break;
+            case COLETADA:
+                if (novoStatus != StatusEntrega.EM_ROTA) {
+                    throw new IllegalStateException("Não é possível alterar o status de COLETADA para " + novoStatus);
+                }
+                break;
+            case EM_ROTA:
+                if (novoStatus != StatusEntrega.ENTREGUE) {
+                    throw new IllegalStateException("Não é possível alterar o status de EM_ROTA para " + novoStatus);
+                }
+                break;
+            case ENTREGUE:
+            case CANCELADA:
+                throw new IllegalStateException("Não é possível alterar o status de uma entrega finalizada ou cancelada.");
         }
     }
 

@@ -1,11 +1,17 @@
 <template>
   <div class="dashboard-container">
     <header class="dashboard-header">
-      <h1>Meu Cardápio</h1>
+      <div v-if="loadingEstablishment">
+        <h1 class="loading-h1">Carregando...</h1>
+      </div>
+      <div v-else-if="establishment">
+        <h1>{{ establishment.nome }}</h1>
+        <p>{{ establishment.endereco }}</p>
+      </div>
       <BaseButton label="Adicionar Produto" icon="plus" @click="openProductModal(null)" />
     </header>
 
-    <div v-if="loading" class="loading-state">
+    <div v-if="loadingProducts" class="loading-state">
       <LoadingSpinner />
       <p>Carregando produtos...</p>
     </div>
@@ -65,76 +71,60 @@
         <BaseButton variant="danger" label="Sim, Excluir" @click="deleteProduct" :loading="deleting" />
       </template>
     </BaseModal>
-
-    <section class="order-management">
-      <div class="section-header">
-        <h2>Pedidos do Restaurante</h2>
-      </div>
-
-      <div v-if="loadingOrders" class="loading-state">
-        <LoadingSpinner />
-        <p>Carregando pedidos...</p>
-      </div>
-
-      <div v-else-if="orders.length > 0" class="orders-list">
-        <OrderCard v-for="order in orders" :key="order.id" :order="order" @update-status="updateOrderStatus" />
-      </div>
-
-      <EmptyState
-        v-else
-        title="Nenhum pedido recebido"
-        description="Aguardando novos pedidos para o seu restaurante."
-      />
-    </section>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import api from '@/api';
 import { useApi } from '@/composables/useApi';
 import { useNotifications } from '@/composables/useNotifications';
 
 import BaseButton from '@/components/base/BaseButton.vue';
-import BaseInput from '@/components/base/BaseInput.vue';
 import BaseModal from '@/components/base/BaseModal.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import LoadingSpinner from '@/components/base/LoadingSpinner.vue';
 import ProductFormModal from '@/components/ProductFormModal.vue';
-import OrderCard from '@/components/order/OrderCard.vue'; // Componente OrderCard será usado
 
 const products = ref([]);
-const orders = ref([]);
+const establishment = ref(null);
 const isProductModalVisible = ref(false);
 const isDeleteModalVisible = ref(false);
 const selectedProduct = ref(null);
 const saving = ref(false);
 const deleting = ref(false);
 
-const { loading, execute: executeApi } = useApi();
-const { loading: loadingOrders, execute: executeOrdersApi } = useApi();
+const api = useApi();
 const { addNotification } = useNotifications();
 
+const loadingProducts = ref(true);
+const loadingEstablishment = ref(true);
+
 onMounted(() => {
+  fetchEstablishment();
   fetchProducts();
-  fetchOrders();
 });
 
-const fetchProducts = async () => {
+const fetchEstablishment = async () => {
+  loadingEstablishment.value = true;
   try {
-    const response = await executeApi(() => api.get('/restaurante/me/produtos'));
-    products.value = response.data;
+    const { data } = await api.get('/restaurante/meu-estabelecimento');
+    establishment.value = data;
   } catch (error) {
-    addNotification({ type: 'error', message: 'Falha ao carregar produtos do restaurante.' });
+    addNotification({ type: 'error', message: 'Falha ao carregar dados do estabelecimento.' });
+  } finally {
+    loadingEstablishment.value = false;
   }
 };
 
-const fetchOrders = async () => {
+const fetchProducts = async () => {
+  loadingProducts.value = true;
   try {
-    const response = await executeOrdersApi(() => api.get('/restaurante/me/pedidos'));
-    orders.value = response.data;
+    const { data } = await api.get('/restaurante/meus-produtos');
+    products.value = data;
   } catch (error) {
-    addNotification({ type: 'error', message: 'Falha ao carregar pedidos do restaurante.' });
+    addNotification({ type: 'error', message: 'Falha ao carregar produtos.' });
+  } finally {
+    loadingProducts.value = false;
   }
 };
 
@@ -166,16 +156,14 @@ const handleProductSave = async (productData) => {
   saving.value = true;
   try {
     if (productData.idProduto) {
-      // Update existing product
-      await executeApi(() => api.put(`/produtos/${productData.idProduto}`, productData));
+      await api.put(`/restaurante/produtos/${productData.idProduto}`, productData);
       addNotification({ type: 'success', message: 'Produto atualizado com sucesso!' });
     } else {
-      // Create new product
-      await executeApi(() => api.post('/produtos', productData));
+      await api.post('/restaurante/produtos', productData);
       addNotification({ type: 'success', message: 'Produto adicionado com sucesso!' });
     }
     closeProductModal();
-    fetchProducts(); // Recarrega a lista
+    fetchProducts();
   } catch (error) {
     addNotification({ type: 'error', message: 'Falha ao salvar produto.' });
   } finally {
@@ -187,24 +175,14 @@ const deleteProduct = async () => {
   if (!selectedProduct.value) return;
   deleting.value = true;
   try {
-    await executeApi(() => api.delete(`/produtos/${selectedProduct.value.idProduto}`));
+    await api.delete(`/restaurante/produtos/${selectedProduct.value.idProduto}`);
     addNotification({ type: 'success', message: 'Produto removido com sucesso!' });
     closeDeleteModal();
-    fetchProducts(); // Recarrega a lista
+    fetchProducts();
   } catch (error) {
     addNotification({ type: 'error', message: 'Falha ao remover produto.' });
   } finally {
     deleting.value = false;
-  }
-};
-
-const updateOrderStatus = async (orderId, newStatus) => {
-  try {
-    await executeOrdersApi(() => api.put(`/pedidos/${orderId}/status`, { status: newStatus }));
-    addNotification({ type: 'success', message: `Status do pedido ${orderId} atualizado para ${newStatus}!` });
-    fetchOrders(); // Recarrega a lista de pedidos
-  } catch (error) {
-    addNotification({ type: 'error', message: 'Falha ao atualizar status do pedido.' });
   }
 };
 </script>

@@ -22,7 +22,8 @@ public class Entrega {
     private String enderecoOrigem;
     private String enderecoDestino;
 
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private StatusEntrega status;
 
     private Integer tempoEstimado;
 
@@ -76,11 +77,11 @@ public class Entrega {
         this.enderecoDestino = enderecoDestino;
     }
 
-    public String getStatus() {
+    public StatusEntrega getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(StatusEntrega status) {
         this.status = status;
     }
 

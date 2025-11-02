@@ -17,9 +17,11 @@ public class Pagamento {
 
     private String metodoPagamento;
 
-    private BigDecimal valor;
+    private double valor;
 
     private String status;
+
+    private String transactionId;
 
     @Temporal(TemporalType.TIMESTAMP)
     private Date dataPagamento;
@@ -50,11 +52,11 @@ public class Pagamento {
         this.metodoPagamento = metodoPagamento;
     }
 
-    public BigDecimal getValor() {
+    public double getValor() {
         return valor;
     }
 
-    public void setValor(BigDecimal valor) {
+    public void setValor(double valor) {
         this.valor = valor;
     }
 
@@ -64,6 +66,14 @@ public class Pagamento {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getTransactionId() {
+        return transactionId;
+    }
+
+    public void setTransactionId(String transactionId) {
+        this.transactionId = transactionId;
     }
 
     public Date getDataPagamento() {

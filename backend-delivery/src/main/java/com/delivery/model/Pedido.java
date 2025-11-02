@@ -16,6 +16,8 @@ public class Pedido {
 
     private float valorTotal;
 
+    private float taxaEntrega;
+
     private String enderecoPedido;
 
     private String status;
@@ -61,6 +63,14 @@ public class Pedido {
 
     public void setValorTotal(float valorTotal) {
         this.valorTotal = valorTotal;
+    }
+
+    public float getTaxaEntrega() {
+        return taxaEntrega;
+    }
+
+    public void setTaxaEntrega(float taxaEntrega) {
+        this.taxaEntrega = taxaEntrega;
     }
 
     public String getEnderecoPedido() {

@@ -8,18 +8,14 @@ import com.delivery.model.Usuario;
 import com.delivery.model.Produto;
 import com.delivery.repository.UsuarioRepository;
 import com.delivery.repository.ProdutoRepository;
+import com.delivery.repository.EstabelecimentoRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.delivery.exception.UserNotFoundException;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,14 +25,16 @@ public class ProdutoService {
 
     private final ProdutoRepository produtoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final EstabelecimentoRepository estabelecimentoRepository;
     private final ProdutoMapper produtoMapper;
-    private final String uploadDir;
+    private final CloudinaryService cloudinaryService;
 
-    public ProdutoService(ProdutoRepository produtoRepository, UsuarioRepository usuarioRepository, ProdutoMapper produtoMapper, @Value("${file.upload-dir}") String uploadDir) {
+    public ProdutoService(ProdutoRepository produtoRepository, UsuarioRepository usuarioRepository, EstabelecimentoRepository estabelecimentoRepository, ProdutoMapper produtoMapper, CloudinaryService cloudinaryService) {
         this.produtoRepository = produtoRepository;
         this.usuarioRepository = usuarioRepository;
+        this.estabelecimentoRepository = estabelecimentoRepository;
         this.produtoMapper = produtoMapper;
-        this.uploadDir = uploadDir;
+        this.cloudinaryService = cloudinaryService;
     }
 
     public List<ProdutoResponseDTO> listarTodos() {
@@ -56,6 +54,12 @@ public class ProdutoService {
                 .collect(Collectors.toList());
     }
 
+    public List<ProdutoResponseDTO> listarPorEstabelecimento(Long estabelecimentoId) {
+        return produtoRepository.findByEstabelecimentoId(estabelecimentoId).stream()
+                .map(produtoMapper::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
     public ProdutoResponseDTO buscarPorId(Long id) {
         return produtoRepository.findById(id)
                 .map(produtoMapper::toResponseDTO)
@@ -64,28 +68,26 @@ public class ProdutoService {
 
     public ProdutoResponseDTO criarProduto(ProdutoRequestDTO produtoRequestDTO, MultipartFile imagem) {
         Produto produto = produtoMapper.toEntity(produtoRequestDTO);
-
         Usuario usuarioLogado = getAuthenticatedUser();
-        
-        // Verifica se o usuário tem a role ADMIN
-        boolean isAdmin = usuarioLogado.getAuthorities().stream()
-                .anyMatch(auth -> auth.getAuthority().equals(ROLE_ADMIN));
-        
-        // Se não for ADMIN, exige estabelecimento
-        if (!isAdmin) {
-            Estabelecimento estabelecimento = usuarioLogado.getEstabelecimento();
+
+        Estabelecimento estabelecimento;
+        if (usuarioLogado.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals(ROLE_ADMIN))) {
+            if (produtoRequestDTO.getEstabelecimentoId() == null) {
+                throw new IllegalArgumentException("Admin deve fornecer um estabelecimentoId para criar um produto.");
+            }
+            estabelecimento = estabelecimentoRepository.findById(produtoRequestDTO.getEstabelecimentoId())
+                    .orElseThrow(() -> new RuntimeException("Estabelecimento não encontrado com o ID: " + produtoRequestDTO.getEstabelecimentoId()));
+        } else {
+            estabelecimento = usuarioLogado.getEstabelecimento();
             if (estabelecimento == null) {
                 throw new IllegalStateException("Usuário não tem um estabelecimento associado para criar produtos.");
             }
-            produto.setEstabelecimento(estabelecimento);
-        } else {
-            // Admin pode criar produtos sem estabelecimento associado
-            produto.setEstabelecimento(usuarioLogado.getEstabelecimento()); // Pode ser null
         }
+        produto.setEstabelecimento(estabelecimento);
 
         if (imagem != null && !imagem.isEmpty()) {
-            String nomeArquivo = salvarImagem(imagem);
-            produto.setCaminhoImagem(nomeArquivo);
+            String imageUrl = cloudinaryService.uploadFile(imagem);
+            produto.setCaminhoImagem(imageUrl);
         }
         Produto produtoSalvo = produtoRepository.save(produto);
         return produtoMapper.toResponseDTO(produtoSalvo);
@@ -137,29 +139,5 @@ public class ProdutoService {
         Estabelecimento estabelecimentoProduto = produto.getEstabelecimento();
         return estabelecimentoUsuario != null && estabelecimentoProduto != null &&
                 estabelecimentoProduto.getId().equals(estabelecimentoUsuario.getId());
-    }
-
-    // TODO: Extrair a lógica de armazenamento de arquivos para um FileStorageService dedicado.
-    private String salvarImagem(MultipartFile imagem) {
-        try {
-            Path diretorioUpload = Paths.get(uploadDir);
-            if (!Files.exists(diretorioUpload)) {
-                Files.createDirectories(diretorioUpload);
-            }
-
-            String nomeArquivoOriginal = imagem.getOriginalFilename();
-            String extensao = "";
-            if (nomeArquivoOriginal != null && nomeArquivoOriginal.contains(".")) {
-                extensao = nomeArquivoOriginal.substring(nomeArquivoOriginal.lastIndexOf("."));
-            }
-            String nomeArquivoUnico = UUID.randomUUID().toString() + extensao;
-
-            Path caminhoArquivo = diretorioUpload.resolve(nomeArquivoUnico);
-            Files.write(caminhoArquivo, imagem.getBytes());
-
-            return nomeArquivoUnico;
-        } catch (IOException e) {
-            throw new RuntimeException("Falha ao salvar a imagem.", e);
-        }
     }
 }

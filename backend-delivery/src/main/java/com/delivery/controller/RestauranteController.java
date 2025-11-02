@@ -1,34 +1,99 @@
 package com.delivery.controller;
 
+import com.delivery.dto.EstabelecimentoResponseDTO;
+
+import com.delivery.dto.ProdutoRequestDTO;
+
 import com.delivery.dto.ProdutoResponseDTO;
+
+import com.delivery.mapper.EstabelecimentoMapper;
+
+import com.delivery.service.EstabelecimentoService;
+
 import com.delivery.service.ProdutoService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+
+import org.springframework.web.bind.annotation.*;
+
+
 
 import java.util.List;
 
+
+
 @RestController
+
 @RequestMapping("/api/restaurante")
-@Tag(name = "Restaurante", description = "Endpoints para gerenciamento do restaurante")
-@SecurityRequirement(name = "bearerAuth")
+
 public class RestauranteController {
+
+
 
     private final ProdutoService produtoService;
 
-    public RestauranteController(ProdutoService produtoService) {
+    private final EstabelecimentoService estabelecimentoService;
+
+    private final EstabelecimentoMapper estabelecimentoMapper;
+
+
+
+    public RestauranteController(ProdutoService produtoService, EstabelecimentoService estabelecimentoService, EstabelecimentoMapper estabelecimentoMapper) {
+
         this.produtoService = produtoService;
+
+        this.estabelecimentoService = estabelecimentoService;
+
+        this.estabelecimentoMapper = estabelecimentoMapper;
+
     }
 
-    @GetMapping("/me/produtos")
-    @Operation(summary = "Lista todos os produtos do estabelecimento do usuário logado (RESTAURANT)")
-    public ResponseEntity<List<ProdutoResponseDTO>> listarMeusProdutos() {
-        List<ProdutoResponseDTO> produtos = produtoService.listarDoMeuEstabelecimento();
-        return ResponseEntity.ok(produtos);
+
+
+    @GetMapping("/meu-estabelecimento")
+
+    public EstabelecimentoResponseDTO getMeuEstabelecimento() {
+
+        return estabelecimentoMapper.toEstabelecimentoResponseDTO(estabelecimentoService.buscarMeuEstabelecimento());
+
     }
+
+
+
+    @GetMapping("/meus-produtos")
+
+    public List<ProdutoResponseDTO> getMeusProdutos() {
+
+        return produtoService.listarDoMeuEstabelecimento();
+
+    }
+
+
+
+    @PostMapping("/produtos")
+
+    public ProdutoResponseDTO criarProduto(@RequestBody ProdutoRequestDTO produtoRequestDTO) {
+
+        return produtoService.criarProduto(produtoRequestDTO, null);
+
+    }
+
+
+
+    @PutMapping("/produtos/{id}")
+
+    public ProdutoResponseDTO atualizarProduto(@PathVariable Long id, @RequestBody ProdutoRequestDTO produtoRequestDTO) {
+
+        return produtoService.atualizarProduto(id, produtoRequestDTO);
+
+    }
+
+
+
+    @DeleteMapping("/produtos/{id}")
+
+    public void deletarProduto(@PathVariable Long id) {
+
+        produtoService.excluir(id);
+
+    }
+
 }

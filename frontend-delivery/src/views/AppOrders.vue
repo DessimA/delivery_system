@@ -26,7 +26,11 @@
         :order="order"
         @view-details="viewOrderDetails"
         @reorder="reorderItems"
-      />
+      >
+        <template v-if="order.entrega" #delivery-tracker>
+          <DeliveryTracker :delivery="order.entrega" />
+        </template>
+      </OrderCard>
     </div>
 
     <EmptyState
@@ -35,7 +39,7 @@
       description="Você ainda não fez nenhum pedido ou não há pedidos com o status selecionado."
       icon="clipboard-list"
       action-label="Ver Cardápio"
-      @action="$router.push('/')"
+      @action="$router.push('/restaurants')"
     />
   </div>
 </template>
@@ -45,16 +49,19 @@ import { ref, onMounted, computed } from 'vue';
 import api from '@/api';
 import { useApi } from '@/composables/useApi';
 import { useNotifications } from '@/composables/useNotifications';
+import { useWebSocket } from '@/composables/useWebSocket';
 
 import OrderCard from '@/components/order/OrderCard.vue';
 import OrderCardSkeleton from '@/components/order/OrderCardSkeleton.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
+import DeliveryTracker from '@/components/DeliveryTracker.vue';
 
 const orders = ref([]);
 const statusFilter = ref('');
 
 const { loading, execute } = useApi();
 const { addNotification } = useNotifications();
+const { subscribe, unsubscribe } = useWebSocket();
 
 onMounted(() => {
   fetchOrders();
@@ -64,8 +71,19 @@ const fetchOrders = async () => {
   try {
     const response = await execute(() => api.get('/pedidos/meus-pedidos'));
     orders.value = response.data;
+    orders.value.forEach(order => {
+      if (order.codigoPedido) {
+        subscribe(`/topic/pedidos/${order.codigoPedido}`, (message) => {
+          const updatedOrder = JSON.parse(message.body);
+          const index = orders.value.findIndex(o => o.codigoPedido === updatedOrder.codigoPedido);
+          if (index !== -1) {
+            orders.value[index].entrega = updatedOrder.entrega; // Update only delivery part
+            orders.value[index].status = updatedOrder.status; // Update order status
+          }
+        });
+      }
+    });
   } catch (err) {
-    // O interceptor global em api.js já exibe uma notificação de erro.
     console.error('Error fetching orders:', err);
   }
 };
@@ -78,12 +96,10 @@ const filteredOrders = computed(() => {
 });
 
 const viewOrderDetails = (orderId) => {
-  // TODO: Implementar navegação para uma página de detalhes do pedido dedicada.
   addNotification({ type: 'info', message: `Funcionalidade 'Ver Detalhes' (Pedido #${orderId}) em desenvolvimento.` });
 };
 
 const reorderItems = (orderId) => {
-  // TODO: Implementar lógica para encontrar o pedido, extrair os IDs dos produtos e adicioná-los ao carrinho.
   addNotification({ type: 'info', message: `Funcionalidade 'Reordenar' (Pedido #${orderId}) em desenvolvimento.` });
 };
 </script>

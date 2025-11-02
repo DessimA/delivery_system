@@ -1,5 +1,5 @@
 <template>
-  <BaseModal :modelValue="modelValue" @update:modelValue="$emit('update:modelValue', $event)" :title="modalTitle">
+  <BaseModal :visible="visible" @close="closeModal" :title="modalTitle">
     <form @submit.prevent="handleSubmit">
       <div class="form-group">
         <label for="nomeProduto">Nome do Produto</label>
@@ -35,18 +35,16 @@
       </div>
 
       <div class="form-group">
-        <label for="caminhoImagem">URL da Imagem</label>
-        <BaseInput
-          id="caminhoImagem"
-          v-model="form.caminhoImagem"
-          placeholder="https://example.com/image.jpg"
-          :error="errors.caminhoImagem"
-        />
+        <label for="imagem">Imagem do Produto</label>
+        <input type="file" @change="handleFileUpload" accept="image/*" />
+        <div v-if="form.caminhoImagem" class="image-preview">
+          <img :src="form.caminhoImagem" alt="Preview da imagem" />
+        </div>
       </div>
 
       <div class="modal-footer">
         <BaseButton label="Cancelar" variant="secondary" @click="closeModal" />
-        <BaseButton type="submit" :label="isEditing ? 'Salvar Alterações' : 'Adicionar Produto'" :loading="loading" />
+        <BaseButton type="submit" :label="isEditing ? 'Salvar Alterações' : 'Adicionar Produto'" :loading="saving" />
       </div>
     </form>
   </BaseModal>
@@ -58,9 +56,10 @@ import BaseModal from '@/components/base/BaseModal.vue';
 import BaseInput from '@/components/base/BaseInput.vue';
 import BaseButton from '@/components/base/BaseButton.vue';
 import { useNotifications } from '@/composables/useNotifications';
+import api from '@/api';
 
 const props = defineProps({
-  modelValue: {
+  visible: {
     type: Boolean,
     default: false,
   },
@@ -68,17 +67,13 @@ const props = defineProps({
     type: Object,
     default: null,
   },
-  loading: {
-    type: Boolean,
-    default: false,
-  },
   saving: {
     type: Boolean,
     default: false,
   },
 });
 
-const emit = defineEmits(['update:modelValue', 'save']);
+const emit = defineEmits(['close', 'save']);
 const { addNotification } = useNotifications();
 
 const defaultForm = {
@@ -87,6 +82,7 @@ const defaultForm = {
   descricao: '',
   preco: 0,
   caminhoImagem: '',
+  imagemFile: null
 };
 
 const form = ref({ ...defaultForm });
@@ -97,20 +93,28 @@ const modalTitle = computed(() => (isEditing.value ? 'Editar Produto' : 'Adicion
 
 watch(() => props.product, (newProduct) => {
   if (newProduct) {
-    form.value = { ...newProduct };
+    form.value = { ...newProduct, imagemFile: null };
   } else {
     form.value = { ...defaultForm };
   }
   errors.value = {}; // Clear errors on product change
 }, { immediate: true });
 
-watch(() => props.modelValue, (newVal) => {
+watch(() => props.visible, (newVal) => {
   if (!newVal) {
     // Reset form and errors when modal closes
     form.value = { ...defaultForm };
     errors.value = {};
   }
 });
+
+const handleFileUpload = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    form.value.imagemFile = file;
+    form.value.caminhoImagem = URL.createObjectURL(file);
+  }
+};
 
 const validateForm = () => {
   let isValid = true;
@@ -128,25 +132,36 @@ const validateForm = () => {
     errors.value.preco = 'Preço deve ser maior que zero.';
     isValid = false;
   }
-  // Basic URL validation for image path
-  if (form.value.caminhoImagem && !/^https?:\/\/.+\.(png|jpg|jpeg|gif|svg)$/.test(form.value.caminhoImagem)) {
-    errors.value.caminhoImagem = 'URL da imagem inválida. Deve ser uma URL válida de imagem (png, jpg, jpeg, gif, svg).';
-    isValid = false;
-  }
 
   return isValid;
 };
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
   if (validateForm()) {
-    emit('save', { ...form.value });
+    const productData = { ...form.value };
+    if (form.value.imagemFile) {
+      const formData = new FormData();
+      formData.append('imagem', form.value.imagemFile);
+      try {
+        const response = await api.post('/upload/imagem', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        productData.caminhoImagem = response.data;
+      } catch (error) {
+        addNotification({ type: 'error', message: 'Falha ao fazer upload da imagem.' });
+        return;
+      }
+    }
+    emit('save', productData);
   } else {
     addNotification({ type: 'error', message: 'Por favor, corrija os erros no formulário.' });
   }
 };
 
 const closeModal = () => {
-  emit('update:modelValue', false);
+  emit('close');
 };
 </script>
 

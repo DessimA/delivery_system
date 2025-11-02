@@ -5,6 +5,9 @@ import com.delivery.dto.PedidoResponseDTO;
 import com.delivery.mapper.PedidoMapper;
 import com.delivery.model.Pedido;
 import com.delivery.model.Produto;
+import com.delivery.model.Entrega;
+import com.delivery.model.StatusEntrega;
+import com.delivery.service.WebSocketService;
 import com.delivery.repository.PedidoRepository;
 import com.delivery.repository.ProdutoRepository;
 import org.springframework.stereotype.Service;
@@ -21,11 +24,13 @@ public class PedidoService {
     private final PedidoRepository pedidoRepository;
     private final ProdutoRepository produtoRepository;
     private final PedidoMapper pedidoMapper;
+    private final WebSocketService webSocketService;
 
-    public PedidoService(PedidoRepository pedidoRepository, ProdutoRepository produtoRepository, PedidoMapper pedidoMapper) {
+    public PedidoService(PedidoRepository pedidoRepository, ProdutoRepository produtoRepository, PedidoMapper pedidoMapper, WebSocketService webSocketService) {
         this.pedidoRepository = pedidoRepository;
         this.produtoRepository = produtoRepository;
         this.pedidoMapper = pedidoMapper;
+        this.webSocketService = webSocketService;
     }
 
     public PedidoResponseDTO criarPedido(PedidoRequestDTO pedidoRequestDTO, Long clienteId) {
@@ -39,13 +44,21 @@ public class PedidoService {
         }
         pedido.setProdutos(produtos);
 
-        float valorTotal = (float) produtos.stream().mapToDouble(Produto::getPreco).sum();
-        pedido.setValorTotal(valorTotal);
+        float valorProdutos = (float) produtos.stream().mapToDouble(Produto::getPreco).sum();
+        float taxaEntrega = 5.0f;
+        pedido.setTaxaEntrega(taxaEntrega);
+        pedido.setValorTotal(valorProdutos + taxaEntrega);
 
         pedido.setDataPedido(new Date());
         pedido.setStatus(STATUS_AGUARDANDO_PAGAMENTO);
 
+        Entrega entrega = new Entrega();
+        entrega.setStatus(StatusEntrega.PENDENTE);
+        entrega.setPedido(pedido);
+        pedido.setEntrega(entrega);
+
         Pedido pedidoSalvo = pedidoRepository.save(pedido);
+        webSocketService.notifyOrderUpdate(pedidoSalvo);
         return pedidoMapper.toResponseDTO(pedidoSalvo);
     }
 

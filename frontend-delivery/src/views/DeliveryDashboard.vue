@@ -38,9 +38,13 @@
             <p><strong>Status:</strong> <span :class="['status-badge', `status--${delivery.status.toLowerCase()}`]">{{ delivery.status }}</span></p>
           </div>
           <div class="actions">
-            <BaseButton v-if="delivery.status === 'ACEITA'" size="sm" variant="secondary" @click="handleUpdateStatus(delivery.id, 'EM_ROTA')" :loading="isActionLoading">Iniciar Rota</BaseButton>
+            <BaseButton v-if="delivery.status === 'ACEITA'" size="sm" variant="secondary" @click="handleUpdateStatus(delivery.id, 'COLETADA')" :loading="isActionLoading">Coletei o Pedido</BaseButton>
+            <BaseButton v-if="delivery.status === 'COLETADA'" size="sm" variant="secondary" @click="handleUpdateStatus(delivery.id, 'EM_ROTA')" :loading="isActionLoading">Iniciar Rota</BaseButton>
             <BaseButton v-if="delivery.status === 'EM_ROTA'" size="sm" variant="primary" @click="handleUpdateStatus(delivery.id, 'ENTREGUE')" :loading="isActionLoading">Finalizar Entrega</BaseButton>
           </div>
+        </div>
+        <div v-if="delivery.status === 'EM_ROTA'" class="map-simulation">
+          <img src="/images/map.png" alt="Mapa simulado" />
         </div>
       </div>
       <EmptyState v-else title="Nenhuma entrega atribuída" description="Aceite uma entrega da lista acima para começar." />
@@ -104,7 +108,7 @@ async function handleAcceptDelivery(deliveryId) {
 
 async function handleUpdateStatus(deliveryId, newStatus) {
   try {
-    await execAction(() => api.put(`/entregas/${deliveryId}/status?novoStatus=${newStatus}`));
+    await execAction(() => api.put(`/entregas/${deliveryId}/status`, { novoStatus }));
     addNotification({ type: 'success', message: `Status da entrega atualizado para ${newStatus}!` });
     fetchAllDeliveries();
   } catch (err) {

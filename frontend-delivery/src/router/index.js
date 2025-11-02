@@ -11,11 +11,22 @@ import AppProfile from '../views/AppProfile.vue';
 import RestaurantDashboard from '../views/RestaurantDashboard.vue';
 import DeliveryDashboard from '../views/DeliveryDashboard.vue';
 import AdminDashboard from '../views/AdminDashboard.vue';
+import RestaurantsList from '../views/RestaurantsList.vue';
+import RestaurantDetail from '../views/RestaurantDetail.vue';
+import CheckoutPix from '../views/CheckoutPix.vue';
 
 const routes = [
   { path: '/', name: 'Home', component: AppHome },
   { path: '/login', name: 'Login', component: AppLogin },
   { path: '/register', name: 'Register', component: AppRegister },
+  { path: '/restaurants', name: 'Restaurants', component: RestaurantsList },
+  { path: '/restaurants/:id', name: 'RestaurantDetail', component: RestaurantDetail },
+  {
+    path: '/checkout/pix',
+    name: 'CheckoutPix',
+    component: CheckoutPix,
+    meta: { requiresAuth: true }
+  },
   {
     path: '/cart',
     name: 'Cart',
