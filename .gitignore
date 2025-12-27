@@ -1,1 +1,24 @@
-/GEMINI.md
+# IDEs
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# Build
+**/target/
+**/dist/
+**/node_modules/
+.gradle/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
