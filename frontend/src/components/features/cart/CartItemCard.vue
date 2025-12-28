@@ -1,19 +1,37 @@
 <template>
-  <div class="cart-item-card">
+  <div class="cart-item-card" role="listitem">
     <div class="item-image">
-      <img :src="item.caminhoImagem || '/images/placeholder-food.svg'" :alt="item.nomeProduto" />
+      <img :src="item.imageUrl || '/images/placeholder-food.svg'" :alt="item.name" loading="lazy" />
     </div>
     <div class="item-details">
-      <h3 class="item-name">{{ item.nomeProduto }}</h3>
-      <p class="item-price">{{ formatCurrency(item.preco) }}</p>
+      <h3 class="item-name">{{ item.name }}</h3>
+      <p class="item-price">{{ formatCurrency(item.price) }}</p>
       <div class="item-quantity-control">
-        <BaseButton size="sm" variant="light" icon="minus" @click="updateQuantity(item.quantity - 1)" />
-        <span class="quantity-display">{{ item.quantity }}</span>
-        <BaseButton size="sm" variant="light" icon="plus" @click="updateQuantity(item.quantity + 1)" />
+        <BaseButton 
+          size="sm" 
+          variant="light" 
+          icon="minus" 
+          @click="updateQuantity(item.quantity - 1)" 
+          aria-label="Diminuir quantidade"
+        />
+        <span class="quantity-display" aria-live="polite">{{ item.quantity }}</span>
+        <BaseButton 
+          size="sm" 
+          variant="light" 
+          icon="plus" 
+          @click="updateQuantity(item.quantity + 1)" 
+          aria-label="Aumentar quantidade"
+        />
       </div>
     </div>
     <div class="item-actions">
-      <BaseButton variant="danger" size="sm" icon="trash" @click="removeItem" />
+      <BaseButton 
+        variant="danger" 
+        size="sm" 
+        icon="trash" 
+        @click="removeItem" 
+        aria-label="Remover item"
+      />
     </div>
   </div>
 </template>
@@ -25,6 +43,7 @@ const props = defineProps({
   item: {
     type: Object,
     required: true,
+    validator: (i) => !!i.id && !!i.name && i.price !== undefined && i.quantity !== undefined
   },
 });
 
@@ -38,11 +57,11 @@ const formatCurrency = (value) => {
 };
 
 const updateQuantity = (newQuantity) => {
-  emit('update-quantity', props.item.idProduto, newQuantity);
+  emit('update-quantity', props.item.id, newQuantity);
 };
 
 const removeItem = () => {
-  emit('remove-item', props.item.idProduto);
+  emit('remove-item', props.item.id);
 };
 </script>
 

@@ -68,13 +68,13 @@ import { ref, onMounted, computed, watch } from 'vue';
 import { useApi } from '@/composables/useApi';
 import { useCartStore } from '@/stores/cart';
 import { useNotifications } from '@/composables/useNotifications';
-import api from '@/plugins/axios';
+import { productService } from '@/services/product.service';
 
 import BaseButton from '@/components/base/BaseButton.vue';
 import BaseInput from '@/components/base/BaseInput.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
-import ProductCard from '@/components/product/ProductCard.vue';
-import ProductCardSkeleton from '@/components/product/ProductCardSkeleton.vue';
+import ProductCard from '@/components/features/product/ProductCard.vue';
+import ProductCardSkeleton from '@/components/features/product/ProductCardSkeleton.vue';
 
 const products = ref([]);
 const searchTerm = ref('');
@@ -99,8 +99,8 @@ onMounted(() => {
 
 const fetchProducts = async () => {
   try {
-    const response = await execute(() => api.get('/produtos'));
-    products.value = response.data;
+    const data = await execute(() => productService.getAll());
+    products.value = data;
   } catch (err) {
     console.error('Error fetching products:', err);
   }
@@ -112,7 +112,7 @@ const filteredProducts = computed(() => {
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
     filtered = filtered.filter(
-      p => p.nomeProduto.toLowerCase().includes(query) || p.descricao.toLowerCase().includes(query)
+      p => p.name.toLowerCase().includes(query) || p.description.toLowerCase().includes(query)
     );
   }
 
@@ -127,7 +127,7 @@ const scrollToProducts = () => {
 
 const addToCart = (product) => {
   cartStore.addItem(product);
-  addNotification({ type: 'success', message: `${product.nomeProduto} adicionado ao carrinho!` });
+  addNotification({ type: 'success', message: `${product.name} adicionado ao carrinho!` });
 };
 </script>
 

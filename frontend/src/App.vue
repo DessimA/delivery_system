@@ -16,7 +16,7 @@
 </template>
 
 <script setup>
-import AppNavbar from './components/AppNavbar.vue';
+import AppNavbar from './components/layout/AppNavbar.vue';
 import NotificationDisplay from './components/layout/NotificationDisplay.vue';
 </script>
 

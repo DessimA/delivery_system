@@ -20,7 +20,8 @@ public class PaymentController {
 
     @PostMapping("/pix/generate")
     public ResponseEntity<PixResponseDTO> generatePix(@Valid @RequestBody PixRequestDTO pixRequestDTO) {
-        String qrCode = "mock-qr-code-base64-string";
+        // Valid Base64 for a 1x1 transparent PNG pixel
+        String qrCode = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
         
         PixResponseDTO response = new PixResponseDTO(
             qrCode,

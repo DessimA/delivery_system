@@ -55,6 +55,12 @@ public class OrderService {
         return orderMapper.toResponseDTO(orderRepository.save(order));
     }
 
+    public List<OrderResponseDTO> findMyOrders(Long customerId) {
+        return orderRepository.findByCustomerId(customerId).stream()
+                .map(orderMapper::toResponseDTO)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
     private void validateRequest(OrderRequestDTO request) {
         if (request.productIds() == null || request.productIds().isEmpty()) {
             throw new IllegalArgumentException("A lista de produtos nao pode estar vazia.");

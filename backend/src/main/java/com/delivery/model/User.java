@@ -35,8 +35,10 @@ public class User implements UserDetails {
     private Cpf cpf;
 
     @NotNull(message = "O campo data não pode ser nulo")
+    @Column(name = "birth_date")
     private LocalDate birthDate;
 
+    @Column(name = "address")
     private String address;
 
     @Embedded
@@ -47,9 +49,9 @@ public class User implements UserDetails {
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
-            name = "users_roles",
+            name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "papel")
+            inverseJoinColumns = @JoinColumn(name = "role_name", referencedColumnName = "name")
     )
     private List<Role> roles;
 

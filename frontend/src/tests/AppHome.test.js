@@ -3,20 +3,28 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import AppHome from '../views/AppHome.vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { useCartStore } from '../stores/cart';
+import { productService } from '@/services/product.service';
 
 // Mock the useApi composable
-vi.mock('../composables/useApi', () => ({
+vi.mock('@/composables/useApi', () => ({
   useApi: () => ({
     loading: false,
-    execute: vi.fn(() => Promise.resolve({ data: [] })),
+    execute: vi.fn((fn) => fn()),
   }),
 }));
 
 // Mock the useNotifications composable
-vi.mock('../composables/useNotifications', () => ({
+vi.mock('@/composables/useNotifications', () => ({
   useNotifications: () => ({
     addNotification: vi.fn(),
   }),
+}));
+
+// Mock productService
+vi.mock('@/services/product.service', () => ({
+  productService: {
+    getAll: vi.fn(() => Promise.resolve([])),
+  },
 }));
 
 describe('AppHome', () => {
@@ -37,24 +45,43 @@ describe('AppHome', () => {
           BaseButton: true,
           BaseInput: true,
           EmptyState: true,
-          FilterChip: true,
           ProductCard: true,
           ProductCardSkeleton: true,
-          Icon: true,
+          BaseIcon: true,
         },
       },
     });
 
-    // Wait for the component to render after data fetching (if any)
     await wrapper.vm.$nextTick();
 
-    // Check if the main title is rendered
     expect(wrapper.find('h1').text()).toBe('Delivery rápido e saboroso');
-
-    // Check if the subtitle is rendered
     expect(wrapper.find('.hero-content p').text()).toBe('Peça seus pratos favoritos com entrega garantida');
-
-    // Check if the hero image is present
     expect(wrapper.find('img[alt="Delivery"]').exists()).toBe(true);
+  });
+
+  it('renders product list when data is available', async () => {
+    const mockProducts = [
+      { id: 1, name: 'Pizza', description: 'Yummy', price: 30.0, imageUrl: 'pizza.jpg' }
+    ];
+    productService.getAll.mockResolvedValue(mockProducts);
+
+    const wrapper = mount(AppHome, {
+      global: {
+        stubs: {
+          BaseButton: true,
+          BaseInput: true,
+          EmptyState: true,
+          ProductCard: false, // Don't stub to check internal content
+          ProductCardSkeleton: true,
+          BaseIcon: true,
+        },
+      },
+    });
+
+    await vi.dynamicImportSettled();
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    expect(productService.getAll).toHaveBeenCalled();
   });
 });

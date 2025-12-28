@@ -50,14 +50,14 @@
 <script setup>
 import { reactive, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
+import { useAuth } from '@/composables/useAuth';
 import { useApi } from '@/composables/useApi';
 import { useNotifications } from '@/composables/useNotifications';
 
 import BaseInput from '@/components/base/BaseInput.vue';
 import BaseButton from '@/components/base/BaseButton.vue';
 
-const authStore = useAuthStore();
+const { login } = useAuth();
 const router = useRouter();
 const route = useRoute();
 const { loading, execute } = useApi();
@@ -106,9 +106,9 @@ const handleLogin = async () => {
   }
 
   try {
-    await execute(() => authStore.login({
+    await execute(() => login({
       email: form.email,
-      senha: form.password,
+      password: form.password,
     }));
     
     addNotification({ type: 'success', message: 'Login realizado com sucesso!' });
@@ -118,9 +118,7 @@ const handleLogin = async () => {
 
   } catch (err) {
     console.error('Login failed in component:', err);
-    
-    // Disparar notificação de erro diretamente
-    const errorMessage = err.message || err.response?.data?.message || 'Erro ao fazer login';
+    const errorMessage = err.response?.data?.message || 'Erro ao fazer login. Verifique suas credenciais.';
     addNotification({ type: 'error', message: errorMessage });
   }
 };

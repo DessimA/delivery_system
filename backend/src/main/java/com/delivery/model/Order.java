@@ -21,6 +21,7 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "customer_id")
     private Long customerId;
 
     @ManyToMany
@@ -31,14 +32,18 @@ public class Order {
     )
     private List<Product> products;
 
+    @Column(name = "order_date")
     private LocalDateTime orderDate;
 
+    @Column(name = "delivery_address")
     private String deliveryAddress;
 
     private String status;
 
+    @Column(name = "delivery_fee")
     private Float deliveryFee;
 
+    @Column(name = "total_value")
     private Float totalValue;
 
     @OneToOne(mappedBy = "order", cascade = CascadeType.ALL)

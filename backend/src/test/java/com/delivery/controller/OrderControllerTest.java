@@ -46,7 +46,7 @@ public class OrderControllerTest extends AbstractControllerTest {
         OrderRequestDTO pedidoRequest = new OrderRequestDTO("Rua Teste", List.of(1L, 2L));
 
         OrderResponseDTO responseDTO = new OrderResponseDTO(
-            1L, 1L, "Rua Teste", 5.0f, "PENDING", null, Collections.emptyList()
+            1L, 1L, "Rua Teste", 5.0f, "PENDING", null, Collections.emptyList(), 45.0f, null
         );
 
         when(securityService.getAuthenticatedUser()).thenReturn(user);

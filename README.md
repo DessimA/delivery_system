@@ -25,22 +25,22 @@ The system was rebuilt to be scalable and easy to maintain using **Clean Code**,
 - 🐳 **Docker:** [`./automation/docker-automation.sh`](./automation/docker-automation.sh) (Full Orchestration)
 
 ### 📖 Technical Documentation
-- [**Architecture Overview**](./docs/en/ARCHITECTURE.md): Detailed layers and Mermaid diagrams.
-- [**Development Standards**](./docs/en/STANDARDS.md): Naming conventions and DTO strategies.
-- [**Testing Procedures**](./docs/en/TESTING.md): Testing pyramid and unit test patterns.
+- [**Architecture Overview**](./docs/en/ARCHITECTURE.md): Detailed layers, Mermaid diagrams, and Frontend Architecture.
+- [**Development Standards**](./docs/en/STANDARDS.md): Naming conventions, DTO strategies, and Component Library.
+- [**Testing Procedures**](./docs/en/TESTING.md): Testing pyramid, Unit/Integration tests, and Frontend TDD.
 
 ---
 
 ## Português (PT-BR)
 
 ### 🏗️ Arquitetura
-O sistema foi reconstruído para ser escalável e fácil de manter, seguindo princípios de **Clean Code**, **SOLID** e **TDD**. Possui um domínio rico com **Value Objects** e utiliza **Virtual Threads do Java 21**.
+O sistema foi reconstruído para ser escalável e fácil de manter, seguindo princípios de **Clean Code**, **SOLID** e **TDD**. Possui um domínio rico com **Value Objects**, comunicações em tempo real e utiliza **Virtual Threads do Java 21**.
 
 ### ⚡ Automação
 - 🛠️ **Local:** [`./automation/local-automation.sh`](./automation/local-automation.sh) (Build, Clean, Start)
 - 🐳 **Docker:** [`./automation/docker-automation.sh`](./automation/docker-automation.sh) (Orquestração Completa)
 
 ### 📖 Documentação Técnica
-- [**Visão Geral da Arquitetura**](./docs/pt-br/ARQUITETURA.md): Camadas detalhadas e diagramas Mermaid.
-- [**Padrões de Desenvolvimento**](./docs/pt-br/PADROES.md): Convenções de nomenclatura e estratégias de DTO.
-- [**Guia de Testes**](./docs/pt-br/TESTES.md): Pirâmide de testes e padrões de testes unitários.
+- [**Visão Geral da Arquitetura**](./docs/pt-br/ARQUITETURA.md): Camadas detalhadas, diagramas Mermaid e Arquitetura Frontend.
+- [**Padrões de Desenvolvimento**](./docs/pt-br/PADROES.md): Convenções de nomenclatura, estratégias de DTO e Biblioteca de Componentes.
+- [**Guia de Testes**](./docs/pt-br/TESTES.md): Pirâmide de testes e padrões de testes unitários/TDD.

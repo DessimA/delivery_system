@@ -27,7 +27,7 @@ public interface UserMapper {
     default List<String> mapRoles(User user) {
         if (user.getRoles() == null) return List.of();
         return user.getRoles().stream()
-                .map(role -> role.getPapel())
+                .map(role -> role.getName())
                 .collect(Collectors.toList());
     }
 }

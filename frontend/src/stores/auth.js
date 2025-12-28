@@ -1,65 +1,46 @@
 import { defineStore } from 'pinia';
-import api from '@/plugins/axios'; // Importe a instância do axios configurada
+import { authService } from '@/services/auth.service';
+import { storage } from '@/utils/storage';
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
     token: null,
-    isInitialized: false, // To track if initial auth check is complete
+    isInitialized: false,
   }),
 
   getters: {
-    isAuthenticated: (state) => !!state.user,
-    isLoggedIn: (state) => !!state.user, // Alias for isAuthenticated
+    isAuthenticated: (state) => !!state.token,
     userRoles: (state) => state.user?.roles || [],
-    
-    // Role checks
-    isRestaurantOwner() {
-      return this.userRoles.includes('RESTAURANT');
-    },
-    isDeliveryUser() {
-      return this.userRoles.includes('DELIVERY');
-    },
-    isAdmin() {
-      return this.userRoles.includes('ADMIN');
-    },
+    isAdmin: (state) => (state.user?.roles || []).includes('ROLE_ADMIN'),
+    isRestaurant: (state) => (state.user?.roles || []).includes('ROLE_RESTAURANT'),
+    isDelivery: (state) => (state.user?.roles || []).includes('ROLE_DELIVERY'),
   },
 
   actions: {
     async login(credentials) {
       try {
-        const response = await api.post('/auth/login', credentials);
-        this.token = response.data.accessToken;
-        localStorage.setItem('authToken', this.token);
+        const data = await authService.login(credentials.email, credentials.password);
+        const { accessToken } = data;
+        
+        this.token = accessToken;
+        storage.set('authToken', accessToken);
         
         await this.fetchUser();
-
       } catch (error) {
-        console.error('Login failed:', error);
         this.logout();
-        
-        // Extrair mensagem de erro da resposta da API
-        const errorMessage = error.response?.data?.message || 'Erro ao fazer login';
-        const errorWithMessage = new Error(errorMessage);
-        errorWithMessage.response = error.response; // Preservar response original
-        
-        throw errorWithMessage;
+        throw error;
       }
     },
 
     async fetchUser() {
-      if (!this.token) {
-        throw new Error('No token available to fetch user.');
-      }
+      if (!this.token) return;
+      
       try {
-        const response = await api.get('/usuarios/me');
-        this.user = response.data;
-        
-        // Salvar usuário no localStorage
-        localStorage.setItem('user', JSON.stringify(this.user));
-        
+        const data = await authService.getCurrentUser();
+        this.user = data;
+        storage.set('user', this.user);
       } catch (error) {
-        console.error('Failed to fetch user:', error);
         this.logout();
         throw error;
       }
@@ -68,28 +49,30 @@ export const useAuthStore = defineStore('auth', {
     logout() {
       this.token = null;
       this.user = null;
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user'); // Remover user do localStorage também
+      storage.remove('authToken');
+      storage.remove('user');
     },
 
-    setUser(newUser) {
-      this.user = newUser;
+    setUser(userData) {
+      this.user = userData;
+      storage.set('user', userData);
     },
 
     async initializeAuth() {
       if (this.isInitialized) return;
 
-      const localToken = localStorage.getItem('authToken');
-      if (localToken) {
-        this.token = localToken;
-        try {
-          await this.fetchUser();
-        } catch (e) {
-          // fetchUser already handles logout on failure
-        }
+      const savedToken = storage.get('authToken');
+      const savedUser = storage.get('user');
+
+      if (savedToken) {
+        this.token = savedToken;
+        this.user = savedUser;
+        
+        // Refresh user data in background
+        this.fetchUser().catch(() => {});
       }
       
       this.isInitialized = true;
-    },
+    }
   },
 });

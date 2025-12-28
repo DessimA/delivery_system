@@ -33,10 +33,10 @@ public class DataLoader implements CommandLineRunner {
     }
 
     private Role createRoleIfNotFound(String name) {
-        Role role = roleRepository.findByPapel(name);
+        Role role = roleRepository.findByName(name);
         if (role == null) {
             role = new Role();
-            role.setPapel(name);
+            role.setName(name);
             roleRepository.save(role);
         }
         return role;
@@ -51,6 +51,7 @@ public class DataLoader implements CommandLineRunner {
                     .password(passwordEncoder.encode("123456"))
                     .cpf(new Cpf("00000000000"))
                     .birthDate(java.time.LocalDate.of(1990, 1, 1))
+                    .address("Admin Street, 1")
                     .roles(Collections.singletonList(adminRole))
                     .build();
             userRepository.save(admin);
@@ -72,6 +73,7 @@ public class DataLoader implements CommandLineRunner {
                     .password(passwordEncoder.encode("123456"))
                     .cpf(new Cpf("11111111111"))
                     .birthDate(java.time.LocalDate.of(1985, 5, 15))
+                    .address("Rua da Pizza, 123")
                     .roles(Collections.singletonList(restaurantRole))
                     .establishment(pizzaria)
                     .build();

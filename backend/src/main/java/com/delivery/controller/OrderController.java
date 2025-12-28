@@ -25,4 +25,10 @@ public class OrderController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(orderService.createOrder(request, user.getId()));
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<java.util.List<OrderResponseDTO>> getMyOrders() {
+        User user = securityService.getAuthenticatedUser();
+        return ResponseEntity.ok(orderService.findMyOrders(user.getId()));
+    }
 }

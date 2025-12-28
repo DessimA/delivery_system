@@ -9,6 +9,7 @@
 
       <form @submit.prevent="handleRegister" class="auth-form">
         <BaseInput
+          id="reg-nome"
           v-model="form.nome"
           label="Nome Completo"
           icon="user"
@@ -16,6 +17,7 @@
           placeholder="Seu nome"
         />
         <BaseInput
+          id="reg-cpf"
           v-model="form.cpf"
           label="CPF"
           icon="credit-card"
@@ -23,6 +25,7 @@
           placeholder="000.000.000-00"
         />
         <BaseInput
+          id="reg-dataNascimento"
           v-model="form.dataNascimento"
           type="date"
           label="Data de Nascimento"
@@ -30,6 +33,7 @@
           :error="errors.dataNascimento"
         />
         <BaseInput
+          id="reg-endereco"
           v-model="form.endereco"
           label="Endereço"
           icon="map-pin"
@@ -37,6 +41,7 @@
           placeholder="Rua, Número, Bairro, Cidade"
         />
         <BaseInput
+          id="reg-email"
           v-model="form.email"
           type="email"
           label="E-mail"
@@ -45,6 +50,7 @@
           placeholder="seu@email.com"
         />
         <BaseInput
+          id="reg-senha"
           v-model="form.senha"
           type="password"
           label="Senha"
@@ -53,6 +59,7 @@
           placeholder="••••••••"
         />
         <BaseInput
+          id="reg-confirmSenha"
           v-model="form.confirmSenha"
           type="password"
           label="Confirmar Senha"
@@ -84,9 +91,9 @@
 <script setup>
 import { reactive, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import api from '@/plugins/axios';
 import { useApi } from '@/composables/useApi';
 import { useNotifications } from '@/composables/useNotifications';
+import { userService } from '@/services/user.service';
 
 import BaseInput from '@/components/base/BaseInput.vue';
 import BaseButton from '@/components/base/BaseButton.vue';
@@ -149,10 +156,16 @@ const handleRegister = async () => {
   }
 
   try {
-    const payload = { ...form };
-    delete payload.confirmSenha;
+    const payload = { 
+      name: form.nome,
+      cpf: form.cpf,
+      birthDate: form.dataNascimento,
+      address: form.endereco,
+      email: form.email,
+      password: form.senha
+    };
 
-    await execute(() => api.post('/usuarios/registrar', payload));
+    await execute(() => userService.register(payload));
     
     addNotification({ type: 'success', message: 'Registro realizado com sucesso! Você já pode fazer login.' });
     router.push('/login');

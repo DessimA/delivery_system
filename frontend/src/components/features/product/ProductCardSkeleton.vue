@@ -1,5 +1,5 @@
 <template>
-  <div class="product-card-skeleton">
+  <div class="product-card-skeleton" aria-hidden="true">
     <div class="skeleton-image"></div>
     <div class="skeleton-info">
       <div class="skeleton-line short"></div>
@@ -14,7 +14,6 @@
 </template>
 
 <script setup>
-// No script needed for skeleton
 </script>
 
 <style lang="scss" scoped>
@@ -42,15 +41,9 @@
   border-radius: var(--radius-sm);
   margin-bottom: var(--spacing-sm);
 
-  &.short {
-    width: 70%;
-  }
-  &.medium {
-    width: 90%;
-  }
-  &.long {
-    width: 60%;
-  }
+  &.short { width: 70%; }
+  &.medium { width: 90%; }
+  &.long { width: 60%; }
 }
 
 .skeleton-footer {
@@ -73,14 +66,7 @@
 }
 
 @keyframes pulse {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-  100% {
-    opacity: 1;
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 </style>

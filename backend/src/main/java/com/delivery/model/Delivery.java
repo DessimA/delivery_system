@@ -35,8 +35,10 @@ public class Delivery {
     @Enumerated(EnumType.STRING)
     private DeliveryStatus status;
 
+    @Column(name = "estimated_time")
     private Integer estimatedTimeMinutes;
 
+    @Column(name = "delivery_value")
     private BigDecimal fee;
 
     private LocalDateTime createdAt;

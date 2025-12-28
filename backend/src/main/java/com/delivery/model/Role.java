@@ -3,69 +3,39 @@ package com.delivery.model;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.Table;
 import org.springframework.security.core.GrantedAuthority;
 
 import java.util.List;
 
 @Entity
+@Table(name = "roles")
 public class Role implements GrantedAuthority {
 
-        @Id
+    @Id
+    private String name;
 
-        private String papel;
+    @ManyToMany(mappedBy = "roles")
+    private List<User> users;
 
-    
-
-        @ManyToMany(mappedBy = "roles")
-
-        private List<User> users;
-
-    
-
-        @Override
-
-        public String getAuthority() {
-
-            return "ROLE_" + this.papel;
-
-        }
-
-    
-
-        // Getters and Setters
-
-    
-
-        public String getPapel() {
-
-            return papel;
-
-        }
-
-    
-
-        public void setPapel(String papel) {
-
-            this.papel = papel;
-
-        }
-
-    
-
-        public List<User> getUsers() {
-
-            return users;
-
-        }
-
-    
-
-        public void setUsers(List<User> users) {
-
-            this.users = users;
-
-        }
-
+    @Override
+    public String getAuthority() {
+        return "ROLE_" + this.name;
     }
 
-    
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public List<User> getUsers() {
+        return users;
+    }
+
+    public void setUsers(List<User> users) {
+        this.users = users;
+    }
+}

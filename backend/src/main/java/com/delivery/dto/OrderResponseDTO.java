@@ -10,5 +10,7 @@ public record OrderResponseDTO(
     Float deliveryFee,
     String status,
     LocalDateTime orderDate,
-    List<ProductResponseDTO> products
+    List<ProductResponseDTO> products,
+    Float total,
+    DeliveryResponseDTO delivery
 ) {}

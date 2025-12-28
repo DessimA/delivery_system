@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/estabelecimentos")
+@RequestMapping("/api/establishments")
 @RequiredArgsConstructor
 public class EstablishmentController {
 
@@ -22,22 +22,22 @@ public class EstablishmentController {
     private final EstablishmentMapper establishmentMapper;
 
     @GetMapping
-    public List<EstablishmentResponseDTO> listarTodos() {
+    public List<EstablishmentResponseDTO> findAll() {
         return establishmentService.findAll().stream()
                 .map(establishmentMapper::toResponseDTO)
                 .collect(Collectors.toList());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<EstablishmentResponseDTO> buscarPorId(@PathVariable Long id) {
+    public ResponseEntity<EstablishmentResponseDTO> findById(@PathVariable Long id) {
         return establishmentService.findById(id)
                 .map(establishmentMapper::toResponseDTO)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/{id}/produtos")
-    public List<ProductResponseDTO> listarProdutosPorEstabelecimento(@PathVariable Long id) {
+    @GetMapping("/{id}/products")
+    public List<ProductResponseDTO> findProductsByEstablishment(@PathVariable Long id) {
         return productService.listByEstablishment(id);
     }
 }

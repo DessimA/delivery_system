@@ -37,12 +37,12 @@ class UserServiceTest extends AbstractServiceTest {
         );
         User user = new User();
         Role role = new Role();
-        role.setPapel("USER");
+        role.setName("USER");
 
         when(userRepository.findByEmailAddress(anyString())).thenReturn(null);
         when(userMapper.toEntity(any())).thenReturn(user);
         when(passwordEncoder.encode(anyString())).thenReturn("encoded");
-        when(roleRepository.findByPapel("USER")).thenReturn(role);
+        when(roleRepository.findByName("USER")).thenReturn(role);
         when(userRepository.save(any())).thenReturn(user);
         when(userMapper.toResponseDTO(any())).thenReturn(mock(UserResponseDTO.class));
 

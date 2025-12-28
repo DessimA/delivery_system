@@ -9,7 +9,7 @@
       <div class="cart-items">
         <CartItemCard
           v-for="item in cartStore.items"
-          :key="item.idProduto"
+          :key="item.id"
           :item="item"
           @update-quantity="updateQuantity"
           @remove-item="removeItem"
@@ -56,7 +56,7 @@
     <BaseModal v-model="isCheckoutModalOpen" title="Finalizar Pedido">
         <form @submit.prevent="handlePlaceOrder" class="checkout-form">
           <div>
-            <BaseInput id="enderecoPedido" v-model="checkoutForm.enderecoPedido" label="Endereço de Entrega" placeholder="Digite seu endereço completo" />
+            <BaseInput id="enderecoPedido" v-model="checkoutForm.deliveryAddress" label="Endereço de Entrega" placeholder="Digite seu endereço completo" />
           </div>
         </form>
         <template #footer>
@@ -76,11 +76,11 @@ import { useCartStore } from '@/stores/cart';
 import { useAuthStore } from '@/stores/auth';
 import { useNotifications } from '@/composables/useNotifications';
 import { useApi } from '@/composables/useApi';
-import api from '@/plugins/axios';
+import { orderService } from '@/services/order.service';
 
 import BaseButton from '@/components/base/BaseButton.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
-import CartItemCard from '@/components/cart/CartItemCard.vue';
+import CartItemCard from '@/components/features/cart/CartItemCard.vue';
 import BaseModal from '@/components/base/BaseModal.vue';
 import BaseInput from '@/components/base/BaseInput.vue';
 
@@ -94,12 +94,12 @@ const deliveryFee = ref(5.00); // Placeholder
 const isCheckoutModalOpen = ref(false);
 
 const checkoutForm = reactive({
-  enderecoPedido: '',
+  deliveryAddress: '',
 });
 
 onMounted(() => {
-  if (authStore.user?.endereco) {
-    checkoutForm.enderecoPedido = authStore.user.endereco;
+  if (authStore.user?.address) {
+    checkoutForm.deliveryAddress = authStore.user.address;
   }
 });
 
@@ -122,7 +122,7 @@ const startCheckout = () => {
 };
 
 const handlePlaceOrder = async () => {
-  if (!checkoutForm.enderecoPedido) {
+  if (!checkoutForm.deliveryAddress) {
     addNotification({ type: 'warning', message: 'Por favor, preencha o endereço de entrega.' });
     return;
   }
@@ -130,16 +130,16 @@ const handlePlaceOrder = async () => {
   try {
     await execute(async () => {
       const pedidoPayload = {
-        enderecoPedido: checkoutForm.enderecoPedido,
-        produtoIds: cartStore.items.map(item => item.idProduto),
+        deliveryAddress: checkoutForm.deliveryAddress,
+        productIds: cartStore.items.map(item => item.id),
       };
-      const pedidoResponse = await api.post('/pedidos', pedidoPayload);
-      const novoPedido = pedidoResponse.data;
+      
+      const novoPedido = await orderService.create(pedidoPayload);
 
       addNotification({ type: 'success', message: 'Pedido criado com sucesso! Redirecionando para o pagamento...' });
       cartStore.clearCart();
       isCheckoutModalOpen.value = false;
-      router.push({ name: 'CheckoutPix', query: { pedidoId: novoPedido.codigoPedido, valor: novoPedido.valorTotal } });
+      router.push({ name: 'CheckoutPix', query: { pedidoId: novoPedido.id, valor: novoPedido.total } });
     });
   } catch (error) {
     addNotification({ type: 'error', message: 'Falha ao finalizar o pedido. Por favor, tente novamente.' });

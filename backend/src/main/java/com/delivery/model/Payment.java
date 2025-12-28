@@ -22,12 +22,15 @@ public class Payment {
 
     private Double amount;
 
+    @Column(name = "payment_method")
     private String paymentMethod;
 
     private String status;
 
+    @Column(name = "transaction_id")
     private String transactionId;
 
+    @Column(name = "payment_date")
     private LocalDateTime paymentDate;
 
     @OneToOne

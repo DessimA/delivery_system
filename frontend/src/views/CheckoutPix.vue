@@ -11,10 +11,10 @@
       </div>
       <div class="copy-paste-container">
         <p>Ou copie e cole:</p>
-        <BaseInput id="pixCopiaCola" :modelValue="pixData.copiaCola" readonly />
-        <BaseButton @click="copyToClipboard(pixData.copiaCola)">Copiar</BaseButton>
+        <BaseInput id="pixCopiaCola" :modelValue="pixData.copyPaste" readonly />
+        <BaseButton @click="copyToClipboard(pixData.copyPaste)">Copiar</BaseButton>
       </div>
-      <p class="expiration-info">Expira em: {{ pixData.expiraEm }}</p>
+      <p class="expiration-info">Expira em: {{ formatDate(pixData.expiresAt) }}</p>
       <div class="waiting-payment">
         <LoadingSpinner />
         <p>Aguardando confirmação do pagamento...</p>
@@ -29,38 +29,35 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useApi } from '../composables/useApi';
-import { useNotifications } from '../composables/useNotifications';
-import LoadingSpinner from '../components/base/LoadingSpinner.vue';
-import BaseInput from '../components/base/BaseInput.vue';
-import BaseButton from '../components/base/BaseButton.vue';
-import api from '../plugins/axios'; // Import the configured axios instance
+import { useApi } from '@/composables/useApi';
+import { useNotifications } from '@/composables/useNotifications';
+import { paymentService } from '@/services/payment.service';
+import LoadingSpinner from '@/components/base/LoadingSpinner.vue';
+import BaseInput from '@/components/base/BaseInput.vue';
+import BaseButton from '@/components/base/BaseButton.vue';
 
 const route = useRoute();
 const router = useRouter();
-const { loading, execute } = useApi(); // Destructure loading and execute
+const { loading, execute } = useApi();
 const { addNotification } = useNotifications();
 
 const pixData = ref(null);
 let paymentCheckInterval = null;
 
 onMounted(async () => {
-  const pedidoId = route.query.pedidoId;
-  const valor = route.query.valor;
+  const orderId = route.query.pedidoId;
+  const amount = route.query.valor;
 
-  if (!pedidoId || !valor) {
+  if (!orderId || !amount) {
     addNotification({ type: 'error', message: 'Dados do pedido incompletos para pagamento PIX.' });
     router.push({ name: 'Home' });
     return;
   }
 
   try {
-    const response = await execute(() => api.post('/pagamentos/pix/gerar', { // Use execute for PIX generation
-      pedidoId: parseInt(pedidoId),
-      valor: parseFloat(valor)
-    }));
-    pixData.value = response.data;
-    startPaymentCheck(pedidoId);
+    const data = await execute(() => paymentService.generatePix(parseInt(orderId), parseFloat(amount)));
+    pixData.value = data;
+    startPaymentCheck(orderId);
   } catch (error) {
     console.error('Erro ao gerar PIX:', error);
     addNotification({ type: 'error', message: 'Falha ao gerar pagamento PIX.' });
@@ -73,22 +70,19 @@ onUnmounted(() => {
   }
 });
 
-const startPaymentCheck = (pedidoId) => {
+const startPaymentCheck = (orderId) => {
   paymentCheckInterval = setInterval(async () => {
     try {
-      const response = await execute(() => api.get(`/pagamentos/${pedidoId}/status`)); // Use execute for status check
-      const status = response.data;
-      if (status === 'CONFIRMADO') {
+      const status = await paymentService.getStatus(orderId);
+      if (status === 'CONFIRMADO' || status === 'PAID') {
         addNotification({ type: 'success', message: 'Pagamento PIX confirmado com sucesso!' });
         clearInterval(paymentCheckInterval);
         router.push({ name: 'Orders' });
       }
     } catch (error) {
       console.error('Erro ao verificar status do pagamento:', error);
-      addNotification({ type: 'error', message: 'Falha ao verificar status do pagamento.' });
-      clearInterval(paymentCheckInterval);
     }
-  }, 5000); // Check every 5 seconds
+  }, 5000);
 };
 
 const copyToClipboard = async (text) => {
@@ -98,6 +92,11 @@ const copyToClipboard = async (text) => {
   } catch (err) {
     addNotification({ type: 'error', message: 'Falha ao copiar código PIX.' });
   }
+};
+
+const formatDate = (dateString) => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleString('pt-BR');
 };
 </script>
 

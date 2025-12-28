@@ -30,10 +30,14 @@ public class UserService {
             throw new EmailAlreadyExistsException("Email ja cadastrado.");
         }
 
+        if (dto.password() == null || dto.password().isBlank()) {
+            throw new IllegalArgumentException("Password is required for registration");
+        }
+
         User user = userMapper.toEntity(dto);
         user.setPassword(passwordEncoder.encode(dto.password()));
         
-        Role userRole = roleRepository.findByPapel("USER");
+        Role userRole = roleRepository.findByName("USER");
         user.setRoles(Collections.singletonList(userRole));
 
         return userMapper.toResponseDTO(userRepository.save(user));
@@ -42,5 +46,24 @@ public class UserService {
     public UserResponseDTO findByEmail(String email) {
         User user = userRepository.findByEmailAddress(email);
         return userMapper.toResponseDTO(user);
+    }
+
+    @Transactional
+    public UserResponseDTO updateProfile(String email, UserRequestDTO dto) {
+        User user = userRepository.findByEmailAddress(email);
+        if (user == null) {
+            throw new com.delivery.exception.UserNotFoundException("Usuario nao encontrado");
+        }
+
+        user.setName(dto.name());
+        user.setCpf(new com.delivery.domain.valueobject.Cpf(dto.cpf()));
+        user.setBirthDate(dto.birthDate());
+        user.setAddress(dto.address());
+        
+        if (dto.password() != null && !dto.password().isBlank()) {
+            user.setPassword(passwordEncoder.encode(dto.password()));
+        }
+
+        return userMapper.toResponseDTO(userRepository.save(user));
     }
 }

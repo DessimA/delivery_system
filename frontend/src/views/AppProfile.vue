@@ -2,13 +2,13 @@
   <div class="profile-container">
     <div class="profile-header" v-if="user">
       <div class="profile-avatar">
-        <img :src="user.avatar || '/images/default-avatar.png'" :alt="user.nome" />
+        <img :src="user.avatar || '/images/default-avatar.png'" :alt="user.name" />
         <button class="avatar-edit-btn" @click="addNotification({ type: 'info', message: 'Funcionalidade em desenvolvimento.' })">
           <BaseIcon name="camera" />
         </button>
       </div>
       <div class="profile-info">
-        <h1>{{ user.nome }}</h1>
+        <h1>{{ user.name }}</h1>
         <p>{{ user.email }}</p>
       </div>
     </div>
@@ -46,11 +46,11 @@
     <!-- Edit Profile Modal -->
     <BaseModal v-model="isEditModalOpen" title="Editar Informações Pessoais">
       <form @submit.prevent="handleUpdateProfile" class="edit-form">
-        <BaseInput v-model="editForm.nome" label="Nome Completo" />
-        <BaseInput v-model="editForm.cpf" label="CPF" />
-        <BaseInput v-model="editForm.dataNascimento" type="date" label="Data de Nascimento" />
-        <BaseInput v-model="editForm.endereco" label="Endereço" />
-        <BaseInput v-model="editForm.email" type="email" label="E-mail" />
+        <BaseInput id="edit-name" v-model="editForm.name" label="Nome Completo" />
+        <BaseInput id="edit-cpf" v-model="editForm.cpf" label="CPF" />
+        <BaseInput id="edit-birthDate" v-model="editForm.birthDate" type="date" label="Data de Nascimento" />
+        <BaseInput id="edit-address" v-model="editForm.address" label="Endereço" />
+        <BaseInput id="edit-email" v-model="editForm.email" type="email" label="E-mail" />
       </form>
       <template #footer>
         <BaseButton label="Cancelar" variant="secondary" @click="isEditModalOpen = false" />
@@ -64,53 +64,56 @@
 import { ref, reactive, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import { useAuth } from '@/composables/useAuth';
 import { useNotifications } from '@/composables/useNotifications';
 import { useApi } from '@/composables/useApi';
-import api from '@/plugins/axios';
+import { userService } from '@/services/user.service';
 
-import ProfileSection from '@/components/profile/ProfileSection.vue';
+import ProfileSection from '@/components/features/profile/ProfileSection.vue';
 import BaseIcon from '@/components/base/BaseIcon.vue';
 import BaseModal from '@/components/base/BaseModal.vue';
 import BaseInput from '@/components/base/BaseInput.vue';
 import BaseButton from '@/components/base/BaseButton.vue';
 
 const authStore = useAuthStore();
+const { user, logout } = useAuth();
 const router = useRouter();
 const { addNotification } = useNotifications();
 const { loading: isUpdating, execute } = useApi();
 
-const user = computed(() => authStore.user);
-
 const isEditModalOpen = ref(false);
 
 const editForm = reactive({
-  nome: '',
+  name: '',
   cpf: '',
-  dataNascimento: '',
-  endereco: '',
+  birthDate: '',
+  address: '',
   email: '',
+  password: ''
 });
 
 const openEditModal = () => {
   if (!user.value) return;
-  // Populate form with current user data
   Object.assign(editForm, {
-    ...user.value,
-    dataNascimento: user.value.dataNascimento ? new Date(user.value.dataNascimento).toISOString().split('T')[0] : '',
+    name: user.value.name || '',
+    cpf: user.value.cpf || '',
+    address: user.value.address || '',
+    email: user.value.email || '',
+    birthDate: user.value.birthDate ? new Date(user.value.birthDate).toISOString().split('T')[0] : '',
+    password: ''
   });
   isEditModalOpen.value = true;
 };
 
 const handleUpdateProfile = async () => {
-  // TODO: Add form validation before submitting
   try {
-    const response = await executeUpdate(() => api.put('/usuarios/me', editForm));
-    authStore.setUser(response.data); // Update user in the store
-    isEditModalOpen.value = false;
+    const updatedUser = await execute(() => userService.updateProfile(editForm)); 
+    authStore.setUser(updatedUser);
+    
     addNotification({ type: 'success', message: 'Perfil atualizado com sucesso!' });
+    isEditModalOpen.value = false;
   } catch (err) {
-    addNotification({ type: 'error', message: 'Falha ao atualizar o perfil. Por favor, tente novamente.' });
-    console.error("Failed to update profile:", err);
+    addNotification({ type: 'error', message: 'Falha ao atualizar o perfil.' });
   }
 };
 
@@ -123,7 +126,7 @@ const openSettings = () => {
 };
 
 const handleLogout = () => {
-  authStore.logout();
+  logout();
   addNotification({ type: 'success', message: 'Você foi desconectado com sucesso.' });
   router.push('/login');
 };

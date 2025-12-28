@@ -20,12 +20,12 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useApi } from '../composables/useApi';
-import { useNotifications } from '../composables/useNotifications';
-import api from '../plugins/axios';
-import RestaurantCard from '../components/RestaurantCard.vue';
-import RestaurantCardSkeleton from '../components/RestaurantCardSkeleton.vue';
-import EmptyState from '../components/base/EmptyState.vue';
+import { useApi } from '@/composables/useApi';
+import { useNotifications } from '@/composables/useNotifications';
+import { establishmentService } from '@/services/establishment.service';
+import RestaurantCard from '@/components/features/establishment/RestaurantCard.vue';
+import RestaurantCardSkeleton from '@/components/features/establishment/RestaurantCardSkeleton.vue';
+import EmptyState from '@/components/base/EmptyState.vue';
 
 const { loading, execute } = useApi();
 const { addNotification } = useNotifications();
@@ -33,8 +33,8 @@ const restaurants = ref([]);
 
 onMounted(async () => {
   try {
-    const response = await execute(() => api.get('/estabelecimentos'));
-    restaurants.value = response.data;
+    const data = await execute(() => establishmentService.getAll());
+    restaurants.value = data;
   } catch (error) {
     addNotification({
       type: 'error',

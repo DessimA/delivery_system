@@ -30,14 +30,14 @@
               <tr v-for="product in products" :key="product.id">
                 <td>
                   <div class="product-info">
-                    <img :src="product.caminhoImagem || '/images/placeholder-food.svg'" alt="Imagem do produto" class="product-image">
+                    <img :src="getProductImage(product)" alt="Imagem do produto" class="product-image">
                     <div>
-                      <div class="product-name">{{ product.nomeProduto }}</div>
-                      <div class="product-description">{{ product.descricao }}</div>
+                      <div class="product-name">{{ product.name }}</div>
+                      <div class="product-description">{{ product.description }}</div>
                     </div>
                   </div>
                 </td>
-                <td>{{ formatCurrency(product.preco) }}</td>
+                <td>{{ formatCurrency(product.price) }}</td>
                 <td>
                   <div class="action-buttons">
                     <BaseButton variant="secondary" size="sm" icon="edit-2" @click="openProductModal(product)" />
@@ -61,13 +61,14 @@
     <ProductFormModal
       v-model="isProductModalVisible"
       :product="selectedProduct"
+      :establishments="establishments"
       :saving="saving"
       @save="handleProductSave"
     />
 
     <!-- Modal de Confirmação de Exclusão -->
     <BaseModal v-model="isDeleteModalVisible" title="Confirmar Exclusão">
-      <p>Você tem certeza que deseja remover o produto "<strong>{{ selectedProduct?.nomeProduto }}</strong>"? Esta ação não pode ser desfeita.</p>
+      <p>Você tem certeza que deseja remover o produto "<strong>{{ selectedProduct?.name }}</strong>"? Esta ação não pode ser desfeita.</p>
       <template #footer>
         <BaseButton variant="secondary" label="Cancelar" @click="closeDeleteModal" />
         <BaseButton variant="danger" label="Sim, Excluir" @click="deleteProduct" :loading="deleting" />
@@ -80,18 +81,20 @@
 import { ref, onMounted } from 'vue';
 import { useApi } from '@/composables/useApi';
 import { useNotifications } from '@/composables/useNotifications';
-import api from '@/plugins/axios';
+import { productService } from '@/services/product.service';
+import { establishmentService } from '@/services/establishment.service';
 
 import BaseButton from '@/components/base/BaseButton.vue';
 import BaseModal from '@/components/base/BaseModal.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import LoadingSpinner from '@/components/base/LoadingSpinner.vue';
-import ProductFormModal from '@/components/ProductFormModal.vue';
+import ProductFormModal from '@/components/features/product/ProductFormModal.vue';
 
 const { loading, execute } = useApi();
 const { addNotification } = useNotifications();
 
 const products = ref([]);
+const establishments = ref([]);
 const isProductModalVisible = ref(false);
 const isDeleteModalVisible = ref(false);
 const selectedProduct = ref(null);
@@ -100,19 +103,39 @@ const deleting = ref(false);
 
 const fetchProducts = async () => {
   try {
-    const response = await execute(() => api.get('/produtos'));
-    products.value = response.data;
+    const data = await execute(() => productService.getAll());
+    products.value = data;
   } catch (error) {
     addNotification({ type: 'error', message: 'Falha ao carregar produtos.' });
   }
 };
 
+const fetchEstablishments = async () => {
+  try {
+    const data = await establishmentService.getAll();
+    establishments.value = data;
+  } catch (error) {
+    console.error("Failed to fetch establishments", error);
+  }
+};
+
 onMounted(() => {
   fetchProducts();
+  fetchEstablishments();
 });
 
 const formatCurrency = (value) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+};
+
+const getProductImage = (product) => {
+  if (product.imageUrl) {
+    if (!product.imageUrl.startsWith('http')) {
+        return `http://localhost:8080/uploads/${product.imageUrl}`;
+    }
+    return product.imageUrl;
+  }
+  return '/images/placeholder-food.svg';
 };
 
 const openProductModal = (product) => {
@@ -135,22 +158,29 @@ const closeDeleteModal = () => {
   selectedProduct.value = null;
 };
 
-const handleProductSave = async (productData) => {
+const handleProductSave = async (data) => {
   saving.value = true;
   try {
-    if (productData.idProduto) {
-      // Update existing product
-      await execute(() => api.put(`/produtos/${productData.idProduto}`, productData));
+    const productData = {
+      name: data.name,
+      description: data.description,
+      price: data.price,
+      establishmentId: data.establishmentId
+    };
+
+    if (data.id) { // Update
+      await execute(() => productService.update(data.id, productData));
       addNotification({ type: 'success', message: 'Produto atualizado com sucesso!' });
     } else {
-      // Create new product
-      await execute(() => api.post('/produtos', productData));
+      // Create - Multipart
+      await execute(() => productService.create(productData, data.imageFile));
       addNotification({ type: 'success', message: 'Produto adicionado com sucesso!' });
     }
     closeProductModal();
-    fetchProducts(); // Recarrega a lista
+    fetchProducts();
   } catch (error) {
     addNotification({ type: 'error', message: 'Falha ao salvar produto.' });
+    console.error(error);
   } finally {
     saving.value = false;
   }
@@ -160,10 +190,10 @@ const deleteProduct = async () => {
   if (!selectedProduct.value) return;
   deleting.value = true;
   try {
-    await execute(() => api.delete(`/produtos/${selectedProduct.value.idProduto}`));
+    await execute(() => productService.delete(selectedProduct.value.id)); 
     addNotification({ type: 'success', message: 'Produto removido com sucesso!' });
     closeDeleteModal();
-    fetchProducts(); // Recarrega a lista
+    fetchProducts(); 
   } catch (error) {
     addNotification({ type: 'error', message: 'Falha ao remover produto.' });
   } finally {

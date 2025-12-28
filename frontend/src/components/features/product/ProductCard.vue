@@ -1,20 +1,21 @@
 <template>
-  <div class="product-card" @click="viewProduct">
+  <div class="product-card" @click="viewProduct" role="article" :aria-label="product.name">
     <div class="product-image">
       <img
-        :src="product.caminhoImagem || '/images/placeholder-food.svg'"
-        :alt="product.nomeProduto"
+        :src="getProductImage(product)"
+        :alt="product.name"
         @error="handleImageError"
+        loading="lazy"
       />
     </div>
 
     <div class="product-info">
-      <h3 class="product-name">{{ product.nomeProduto }}</h3>
-      <p class="product-description">{{ product.descricao }}</p>
+      <h3 class="product-name">{{ product.name }}</h3>
+      <p class="product-description">{{ product.description }}</p>
 
       <div class="product-footer">
         <div class="product-price">
-          <span class="current-price">{{ formatCurrency(product.preco) }}</span>
+          <span class="current-price" aria-live="polite">{{ formatCurrency(product.price) }}</span>
         </div>
 
         <BaseButton
@@ -23,6 +24,7 @@
           size="sm"
           icon="plus"
           @click.stop="addToCart"
+          aria-label="Adicionar ao carrinho"
         />
       </div>
     </div>
@@ -36,6 +38,7 @@ const props = defineProps({
   product: {
     type: Object,
     required: true,
+    validator: (p) => !!p.id && !!p.name && p.price !== undefined
   },
 });
 
@@ -48,19 +51,28 @@ const formatCurrency = (value) => {
   }).format(value);
 };
 
+const getProductImage = (product) => {
+  if (product.imageUrl) {
+    if (!product.imageUrl.startsWith('http')) {
+        // Use environment variable for backend URL if possible
+        const backendUrl = import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:8080';
+        return `${backendUrl}/uploads/${product.imageUrl}`;
+    }
+    return product.imageUrl;
+  }
+  return '/images/placeholder-food.svg';
+};
+
 const handleImageError = (event) => {
   event.target.src = '/images/placeholder-food.svg';
 };
 
 const addToCart = () => {
-  // Apenas emite o evento. O componente pai cuidará da lógica.
   emit('add-to-cart', props.product);
 };
 
 const viewProduct = () => {
   emit('view-product', props.product);
-  // Opcionalmente, navegar para a página de detalhes do produto
-  // router.push(`/products/${props.product.idProduto}`);
 };
 </script>
 
@@ -79,6 +91,11 @@ const viewProduct = () => {
   &:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-md);
+  }
+
+  &:focus-within {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
   }
 }
 
@@ -126,7 +143,7 @@ const viewProduct = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: auto; /* Pushes footer to the bottom */
+  margin-top: auto;
   padding-top: var(--spacing-sm);
 }
 

@@ -1,74 +1,61 @@
 import { defineStore } from 'pinia';
+import { storage } from '@/utils/storage';
 
-const CART_STORAGE_KEY = 'cartItems';
-
-// Helper to safely get cart from localStorage
-const getCartFromStorage = () => {
-  const storedCart = localStorage.getItem(CART_STORAGE_KEY);
-  if (!storedCart) return [];
-  try {
-    return JSON.parse(storedCart);
-  } catch (e) {
-    console.error("Failed to parse cart from localStorage, clearing cart.", e);
-    localStorage.removeItem(CART_STORAGE_KEY);
-    return [];
-  }
-};
-
-// Helper to save cart to localStorage
-const saveCartToStorage = (cartItems) => {
-    try {
-        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
-    } catch (e) {
-        console.error("Failed to save cart to localStorage", e);
-    }
-};
+const CART_STORAGE_KEY = 'cart_items';
 
 export const useCartStore = defineStore('cart', {
   state: () => ({
-    items: getCartFromStorage(),
+    items: storage.get(CART_STORAGE_KEY) || [],
     isOpen: false,
   }),
   getters: {
     itemCount: (state) => state.items.reduce((sum, item) => sum + item.quantity, 0),
-    total: (state) => state.items.reduce((sum, item) => sum + (item.preco * item.quantity), 0),
+    total: (state) => state.items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
   },
   actions: {
     addItem(product) {
-      const existingItem = this.items.find(item => item.idProduto === product.idProduto);
+      // Defensive check to ensure product has required English keys
+      if (!product.id || !product.name) {
+          console.error("Attempted to add malformed product to cart:", product);
+          return;
+      }
+
+      const existingItem = this.items.find(item => item.id === product.id);
       if (existingItem) {
         existingItem.quantity++;
       } else {
         this.items.push({ 
-            idProduto: product.idProduto,
-            nomeProduto: product.nomeProduto,
-            preco: product.preco,
-            caminhoImagem: product.caminhoImagem,
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            imageUrl: product.imageUrl,
             quantity: 1 
         });
       }
-      saveCartToStorage(this.items);
+      this.saveCart();
     },
     removeItem(productId) {
-      this.items = this.items.filter(item => item.idProduto !== productId);
-      saveCartToStorage(this.items);
+      this.items = this.items.filter(item => item.id !== productId);
+      this.saveCart();
     },
     updateQuantity(productId, quantity) {
-      const itemToUpdate = this.items.find(item => item.idProduto === productId);
+      const itemToUpdate = this.items.find(item => item.id === productId);
       if (itemToUpdate) {
         if (quantity > 0) {
           itemToUpdate.quantity = quantity;
         } else {
-          // If quantity is 0 or less, remove the item
           this.removeItem(productId);
-          return; // removeItem already saves, so we exit here.
+          return;
         }
       }
-      saveCartToStorage(this.items);
+      this.saveCart();
     },
     clearCart() {
       this.items = [];
-      saveCartToStorage(this.items);
+      this.saveCart();
+    },
+    saveCart() {
+      storage.set(CART_STORAGE_KEY, this.items);
     },
     toggleCart() {
       this.isOpen = !this.isOpen;

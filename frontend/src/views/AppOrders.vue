@@ -22,13 +22,13 @@
     <div v-else-if="filteredOrders.length > 0" class="orders-list">
       <OrderCard
         v-for="order in filteredOrders"
-        :key="order.codigoPedido"
+        :key="order.id"
         :order="order"
         @view-details="viewOrderDetails"
         @reorder="reorderItems"
       >
-        <template v-if="order.entrega" #delivery-tracker>
-          <DeliveryTracker :delivery="order.entrega" />
+        <template v-if="order.delivery" #delivery-tracker>
+          <DeliveryTracker :delivery="order.delivery" />
         </template>
       </OrderCard>
     </div>
@@ -45,16 +45,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
-import api from '@/plugins/axios';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useApi } from '@/composables/useApi';
 import { useNotifications } from '@/composables/useNotifications';
 import { useWebSocket } from '@/composables/useWebSocket';
+import { orderService } from '@/services/order.service';
 
-import OrderCard from '@/components/order/OrderCard.vue';
-import OrderCardSkeleton from '@/components/order/OrderCardSkeleton.vue';
+import OrderCard from '@/components/features/order/OrderCard.vue';
+import OrderCardSkeleton from '@/components/features/order/OrderCardSkeleton.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
-import DeliveryTracker from '@/components/DeliveryTracker.vue';
+import DeliveryTracker from '@/components/features/delivery/DeliveryTracker.vue';
 
 const orders = ref([]);
 const statusFilter = ref('');
@@ -72,25 +72,27 @@ onMounted(() => {
 onUnmounted(() => {
   // Unsubscribe from all active WebSocket subscriptions
   subscriptions.value.forEach(sub => {
-    unsubscribe(sub.topic, sub.handler);
+    unsubscribe(sub.topic);
   });
 });
 
 const fetchOrders = async () => {
   try {
-    const response = await execute(() => api.get('/pedidos/meus-pedidos'));
-    orders.value = response.data;
+    const data = await execute(() => orderService.getMyOrders());
+    orders.value = data;
     orders.value.forEach(order => {
-      if (order.codigoPedido) {
+      if (order.id) {
         const handler = (message) => {
-          const updatedOrder = JSON.parse(message.body);
-          const index = orders.value.findIndex(o => o.codigoPedido === updatedOrder.codigoPedido);
+          const deliveryUpdate = JSON.parse(message.body);
+          console.log(`Received update for order ${order.id}:`, deliveryUpdate);
+          
+          const index = orders.value.findIndex(o => o.id === order.id);
           if (index !== -1) {
-            orders.value[index].entrega = updatedOrder.entrega; // Update only delivery part
-            orders.value[index].status = updatedOrder.status; // Update order status
+            orders.value[index].delivery = deliveryUpdate; 
+            orders.value[index].status = deliveryUpdate.status; 
           }
         };
-        const topic = `/topic/pedidos/${order.codigoPedido}`;
+        const topic = `/topic/orders/${order.id}`;
         subscribe(topic, handler);
         subscriptions.value.push({ topic, handler });
       }

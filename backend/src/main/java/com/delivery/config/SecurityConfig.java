@@ -29,7 +29,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    @Value("${frontend.url}")
+    @Value("${app.cors.allowed-origins}")
     private String[] allowedOrigins;
 
     @Autowired
@@ -57,20 +57,22 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 // Public Routes
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/usuarios/registrar").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/produtos/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/estabelecimentos/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/users/register").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/establishments/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**", "/swagger-ui.html").permitAll()
+                .requestMatchers("/uploads/**").permitAll()
+                .requestMatchers("/ws/**").permitAll()
 
                 // Admin/Restaurant Routes
-                .requestMatchers(HttpMethod.POST, "/api/produtos").hasAnyAuthority("ROLE_ADMIN", "ROLE_RESTAURANT")
-                .requestMatchers(HttpMethod.PUT, "/api/produtos/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_RESTAURANT")
-                .requestMatchers(HttpMethod.DELETE, "/api/produtos/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_RESTAURANT")
-                .requestMatchers(HttpMethod.POST, "/api/estabelecimentos").hasAuthority("ROLE_ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/estabelecimentos/**").hasAuthority("ROLE_RESTAURANT")
-                .requestMatchers(HttpMethod.DELETE, "/api/estabelecimentos/**").hasAuthority("ROLE_ADMIN")
-                .requestMatchers(HttpMethod.GET, "/api/pedidos").hasAuthority("ROLE_ADMIN")
-                .requestMatchers("/api/restaurante/**").hasAuthority("ROLE_RESTAURANT")
+                .requestMatchers(HttpMethod.POST, "/api/products").hasAnyAuthority("ROLE_ADMIN", "ROLE_RESTAURANT")
+                .requestMatchers(HttpMethod.PUT, "/api/products/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_RESTAURANT")
+                .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_RESTAURANT")
+                .requestMatchers(HttpMethod.POST, "/api/establishments").hasAuthority("ROLE_ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/establishments/**").hasAuthority("ROLE_RESTAURANT")
+                .requestMatchers(HttpMethod.DELETE, "/api/establishments/**").hasAuthority("ROLE_ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/orders").hasAuthority("ROLE_ADMIN")
+                .requestMatchers("/api/restaurant/**").hasAuthority("ROLE_RESTAURANT")
 
                 // Delivery/Courier Routes
                 .requestMatchers("/api/deliveries/available").hasAuthority("ROLE_DELIVERY")
@@ -82,9 +84,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/payments/**").authenticated()
 
                 // Generic Authenticated Routes
-                .requestMatchers(HttpMethod.POST, "/api/pedidos").authenticated()
-                .requestMatchers("/api/usuarios/me/**").authenticated()
-                .requestMatchers(HttpMethod.GET, "/api/pedidos/**").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/orders").authenticated()
+                .requestMatchers("/api/users/me/**").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/orders/**").authenticated()
 
                 .anyRequest().authenticated()
             );
@@ -97,10 +99,13 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        // Use allowedOriginPatterns instead of allowedOrigins to support wildcards with credentials
+        configuration.setAllowedOriginPatterns(Arrays.asList("*")); 
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
+        configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

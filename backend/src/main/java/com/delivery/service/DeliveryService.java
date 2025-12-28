@@ -10,6 +10,7 @@ import com.delivery.model.User;
 import com.delivery.repository.DeliveryRepository;
 import com.delivery.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,7 @@ public class DeliveryService {
     private final OrderRepository orderRepository;
     private final DeliveryMapper deliveryMapper;
     private final SecurityService securityService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
     public DeliveryResponseDTO createDelivery(DeliveryRequestDTO dto) {
@@ -69,7 +71,9 @@ public class DeliveryService {
         delivery.setCourier(courier);
         delivery.setStatus(DeliveryStatus.ACEITA);
         
-        return deliveryMapper.toResponseDTO(deliveryRepository.save(delivery));
+        Delivery saved = deliveryRepository.save(delivery);
+        notifyUpdate(saved);
+        return deliveryMapper.toResponseDTO(saved);
     }
 
     @Transactional
@@ -84,7 +88,16 @@ public class DeliveryService {
             delivery.setDeliveredAt(LocalDateTime.now());
         }
 
-        return deliveryMapper.toResponseDTO(deliveryRepository.save(delivery));
+        Delivery saved = deliveryRepository.save(delivery);
+        notifyUpdate(saved);
+        return deliveryMapper.toResponseDTO(saved);
+    }
+
+    private void notifyUpdate(Delivery delivery) {
+        if (delivery.getOrder() != null) {
+            String topic = "/topic/orders/" + delivery.getOrder().getId();
+            messagingTemplate.convertAndSend(topic, deliveryMapper.toResponseDTO(delivery));
+        }
     }
 
     public List<DeliveryResponseDTO> listMyDeliveries() {

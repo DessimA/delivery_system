@@ -4,20 +4,24 @@ import { ref, watch } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useNotifications } from './useNotifications';
 
-const WEBSOCKET_URL = import.meta.env.VITE_APP_WEBSOCKET_URL || 'ws://localhost:8080/ws';
+const WEBSOCKET_URL = import.meta.env.VITE_APP_WEBSOCKET_URL || 'http://localhost:8080/ws';
 
 const stompClient = ref(null);
 const isConnected = ref(false);
+const activeSubscriptions = new Map();
+const subscriptionQueue = [];
 
 export function useWebSocket() {
   const authStore = useAuthStore();
   const { addNotification } = useNotifications();
 
   const connect = () => {
-    if (isConnected.value) return;
+    if (isConnected.value || (stompClient.value && stompClient.value.connected)) return;
 
+    console.log('Connecting to WebSocket...');
     const socket = new SockJS(WEBSOCKET_URL);
     stompClient.value = Stomp.over(socket);
+    stompClient.value.debug = null; // Reduce console noise
 
     const headers = {};
     if (authStore.token) {
@@ -28,22 +32,19 @@ export function useWebSocket() {
       headers,
       (frame) => {
         isConnected.value = true;
-        console.log('Connected to WebSocket: ' + frame);
+        console.log('Connected to WebSocket');
         
-        // Inscrições gerais
-        stompClient.value.subscribe('/topic/general', (message) => {
-          addNotification({ type: 'info', message: message.body });
-        });
-
-        // Inscrições específicas do usuário (se logado)
-        if (authStore.isAuthenticated && authStore.user?.codigo) {
-          subscribeToUserTopics(authStore.user.codigo);
+        // Process queued subscriptions
+        while (subscriptionQueue.length > 0) {
+          const { topic, callback } = subscriptionQueue.shift();
+          subscribe(topic, callback);
         }
       },
       (error) => {
         console.error('WebSocket connection error:', error);
-        addNotification({ type: 'error', message: 'Erro na conexão com o servidor de notificações.' });
         isConnected.value = false;
+        // Attempt to reconnect after 5 seconds
+        setTimeout(connect, 5000);
       }
     );
   };
@@ -52,20 +53,33 @@ export function useWebSocket() {
     if (stompClient.value) {
       stompClient.value.disconnect(() => {
         isConnected.value = false;
+        activeSubscriptions.clear();
         console.log('Disconnected from WebSocket');
       });
     }
   };
 
-  const subscribeToUserTopics = (userId) => {
-    if (!stompClient.value || !isConnected.value) return;
+  const subscribe = (topic, callback) => {
+    if (isConnected.value && stompClient.value?.connected) {
+      const subscription = stompClient.value.subscribe(topic, callback);
+      activeSubscriptions.set(topic, subscription);
+      return subscription;
+    } else {
+      console.log(`Queueing subscription for topic: ${topic}`);
+      subscriptionQueue.push({ topic, callback });
+      return null;
+    }
+  };
 
-    // Exemplo: Inscrição para atualizações de pedidos do usuário
-    stompClient.value.subscribe(`/topic/pedidos/${userId}`, (message) => {
-      addNotification({ type: 'info', message: `Atualização do seu pedido: ${message.body}` });
-    });
-
-    console.log(`Subscribed to user-specific topics for user ${userId}`);
+  const unsubscribe = (topic) => {
+    const subscription = activeSubscriptions.get(topic);
+    if (subscription) {
+      subscription.unsubscribe();
+      activeSubscriptions.delete(topic);
+    }
+    // Also remove from queue if it's there
+    const queueIndex = subscriptionQueue.findIndex(s => s.topic === topic);
+    if (queueIndex !== -1) subscriptionQueue.splice(queueIndex, 1);
   };
 
   // Observa o estado de autenticação para conectar/desconectar
@@ -77,7 +91,7 @@ export function useWebSocket() {
     } else {
       disconnect();
     }
-  });
+  }, { immediate: true });
 
-  return { connect, disconnect };
+  return { connect, disconnect, subscribe, unsubscribe, isConnected };
 }
