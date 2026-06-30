@@ -5,8 +5,8 @@
         <h1 class="loading-h1">Carregando...</h1>
       </div>
       <div v-else-if="establishment">
-        <h1>{{ establishment.nome }}</h1>
-        <p>{{ establishment.endereco }}</p>
+        <h1>{{ establishment.name }}</h1>
+        <p>{{ establishment.address }}</p>
       </div>
       <BaseButton label="Adicionar Produto" icon="plus" @click="openProductModal(null)" />
     </header>
@@ -26,17 +26,17 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="product in products" :key="product.idProduto">
+          <tr v-for="product in products" :key="product.id">
             <td>
               <div class="product-info">
-                <img :src="product.caminhoImagem || '/images/placeholder-food.svg'" alt="Imagem do produto" class="product-image">
+                <img :src="product.imageUrl || '/images/placeholder-food.svg'" alt="Imagem do produto" class="product-image">
                 <div>
-                  <div class="product-name">{{ product.nomeProduto }}</div>
-                  <div class="product-description">{{ product.descricao }}</div>
+                  <div class="product-name">{{ product.name }}</div>
+                  <div class="product-description">{{ product.description }}</div>
                 </div>
               </div>
             </td>
-            <td>{{ formatCurrency(product.preco) }}</td>
+            <td>{{ formatCurrency(product.price) }}</td>
             <td>
               <div class="action-buttons">
                 <BaseButton variant="secondary" size="sm" icon="edit-2" @click="openProductModal(product)" />
@@ -56,16 +56,15 @@
 
     <!-- Modal para Adicionar/Editar Produto -->
     <ProductFormModal
-      :visible="isProductModalVisible"
+      v-model="isProductModalVisible"
       :product="selectedProduct"
       :saving="saving"
-      @close="closeProductModal"
       @save="handleProductSave"
     />
 
     <!-- Modal de Confirmação de Exclusão -->
-    <BaseModal :visible="isDeleteModalVisible" @close="closeDeleteModal" title="Confirmar Exclusão">
-      <p>Você tem certeza que deseja remover o produto "<strong>{{ selectedProduct?.nomeProduto }}</strong>"? Esta ação não pode ser desfeita.</p>
+    <BaseModal v-model="isDeleteModalVisible" title="Confirmar Exclusão">
+      <p>Você tem certeza que deseja remover o produto "<strong>{{ selectedProduct?.name }}</strong>"? Esta ação não pode ser desfeita.</p>
       <template #footer>
         <BaseButton variant="secondary" label="Cancelar" @click="closeDeleteModal" />
         <BaseButton variant="danger" label="Sim, Excluir" @click="deleteProduct" :loading="deleting" />
@@ -84,7 +83,7 @@ import BaseButton from '@/components/base/BaseButton.vue';
 import BaseModal from '@/components/base/BaseModal.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import LoadingSpinner from '@/components/base/LoadingSpinner.vue';
-import ProductFormModal from '@/components/ProductFormModal.vue';
+import ProductFormModal from '@/components/features/product/ProductFormModal.vue';
 
 const products = ref([]);
 const establishment = ref(null);
@@ -150,11 +149,23 @@ const closeDeleteModal = () => {
 const handleProductSave = async (productData) => {
   saving.value = true;
   try {
-    if (productData.idProduto) {
-      await executeProducts(() => api.put(`/restaurante/produtos/${productData.idProduto}`, productData));
+    const payload = {
+      name: productData.name,
+      description: productData.description,
+      price: productData.price,
+      establishmentId: productData.establishmentId
+    };
+
+    if (productData.id) {
+      await executeProducts(() => api.put(`/restaurante/produtos/${productData.id}`, payload));
       addNotification({ type: 'success', message: 'Produto atualizado com sucesso!' });
     } else {
-      await executeProducts(() => api.post('/restaurante/produtos', productData));
+      const formData = new FormData();
+      formData.append('data', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+      if (productData.imageFile) {
+        formData.append('image', productData.imageFile);
+      }
+      await executeProducts(() => api.post('/restaurante/produtos', formData));
       addNotification({ type: 'success', message: 'Produto adicionado com sucesso!' });
     }
     closeProductModal();
@@ -171,7 +182,7 @@ const deleteProduct = async () => {
   if (!selectedProduct.value) return;
   deleting.value = true;
   try {
-    await executeProducts(() => api.delete(`/restaurante/produtos/${selectedProduct.value.idProduto}`));
+    await executeProducts(() => api.delete(`/restaurante/produtos/${selectedProduct.value.id}`));
     addNotification({ type: 'success', message: 'Produto removido com sucesso!' });
     closeDeleteModal();
     fetchProducts();

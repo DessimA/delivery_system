@@ -9,10 +9,10 @@
       <div v-else-if="availableDeliveries.length > 0" class="deliveries-list">
         <div v-for="delivery in availableDeliveries" :key="delivery.id" class="delivery-card">
           <div class="info">
-            <p><strong>Pedido:</strong> #{{ delivery.codigoPedido }}</p>
-            <p><strong>Origem:</strong> {{ delivery.enderecoOrigem }}</p>
-            <p><strong>Destino:</strong> {{ delivery.enderecoDestino }}</p>
-            <p><strong>Valor:</strong> {{ formatCurrency(delivery.valorEntrega) }}</p>
+            <p><strong>Pedido:</strong> #{{ delivery.orderId }}</p>
+            <p><strong>Origem:</strong> {{ delivery.originAddress }}</p>
+            <p><strong>Destino:</strong> {{ delivery.destinationAddress }}</p>
+            <p><strong>Valor:</strong> {{ formatCurrency(delivery.fee) }}</p>
           </div>
           <div class="actions">
             <BaseButton size="sm" @click="handleAcceptDelivery(delivery.id)" :loading="isActionLoading">Aceitar</BaseButton>
@@ -33,8 +33,8 @@
       <div v-else-if="myDeliveries.length > 0" class="deliveries-list">
         <div v-for="delivery in myDeliveries" :key="delivery.id" class="delivery-card">
           <div class="info">
-            <p><strong>Pedido:</strong> #{{ delivery.codigoPedido }}</p>
-            <p><strong>Destino:</strong> {{ delivery.enderecoDestino }}</p>
+            <p><strong>Pedido:</strong> #{{ delivery.orderId }}</p>
+            <p><strong>Destino:</strong> {{ delivery.destinationAddress }}</p>
             <p><strong>Status:</strong> <span :class="['status-badge', `status--${delivery.status.toLowerCase()}`]">{{ delivery.status }}</span></p>
           </div>
           <div class="actions">
@@ -80,7 +80,7 @@ async function fetchAllDeliveries() {
 
 async function fetchAvailableDeliveries() {
   try {
-    const response = await execAvailable(() => api.get('/entregas/disponiveis'));
+    const response = await execAvailable(() => api.get('/api/deliveries/available'));
     availableDeliveries.value = response.data;
   } catch (err) {
     addNotification({ type: 'error', message: 'Falha ao carregar entregas disponíveis.' });
@@ -90,7 +90,7 @@ async function fetchAvailableDeliveries() {
 
 async function fetchMyDeliveries() {
   try {
-    const response = await execMine(() => api.get('/entregas/minhas'));
+    const response = await execMine(() => api.get('/api/deliveries/mine'));
     myDeliveries.value = response.data;
   } catch (err) {
     addNotification({ type: 'error', message: 'Falha ao carregar suas entregas.' });
@@ -100,7 +100,7 @@ async function fetchMyDeliveries() {
 
 async function handleAcceptDelivery(deliveryId) {
   try {
-    await execAction(() => api.post(`/entregas/${deliveryId}/aceitar`));
+    await execAction(() => api.post(`/api/deliveries/${deliveryId}/accept`));
     addNotification({ type: 'success', message: 'Entrega aceita com sucesso!' });
     fetchAllDeliveries();
   } catch (err) {
@@ -111,7 +111,7 @@ async function handleAcceptDelivery(deliveryId) {
 
 async function handleUpdateStatus(deliveryId, newStatus) {
   try {
-    await execAction(() => api.put(`/entregas/${deliveryId}/status`, { novoStatus }));
+    await execAction(() => api.put(`/api/deliveries/${deliveryId}/status?status=${newStatus}`));
     addNotification({ type: 'success', message: `Status da entrega atualizado para ${newStatus}!` });
     fetchAllDeliveries();
   } catch (err) {
