@@ -79,6 +79,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { BACKEND_URL } from '@/config/env';
 import { useApi } from '@/composables/useApi';
 import { useNotifications } from '@/composables/useNotifications';
 import { productService } from '@/services/product.service';
@@ -131,7 +132,7 @@ const formatCurrency = (value) => {
 const getProductImage = (product) => {
   if (product.imageUrl) {
     if (!product.imageUrl.startsWith('http')) {
-        return `http://localhost:8080/uploads/${product.imageUrl}`;
+        return `${BACKEND_URL}/uploads/${product.imageUrl}`;
     }
     return product.imageUrl;
   }

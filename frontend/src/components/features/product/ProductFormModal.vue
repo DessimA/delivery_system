@@ -63,6 +63,7 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue';
+import { BACKEND_URL } from '@/config/env';
 import BaseModal from '@/components/base/BaseModal.vue';
 import BaseInput from '@/components/base/BaseInput.vue';
 import BaseButton from '@/components/base/BaseButton.vue';
@@ -129,6 +130,9 @@ watch(() => props.modelValue, (newVal) => {
 const handleFileUpload = (event) => {
   const file = event.target.files[0];
   if (file) {
+    if (form.value.imageUrl && form.value.imageUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(form.value.imageUrl);
+    }
     form.value.imageFile = file;
     form.value.imageUrl = URL.createObjectURL(file);
   }
@@ -136,8 +140,7 @@ const handleFileUpload = (event) => {
 
 const getImagePreview = (url) => {
     if (url && !url.startsWith('blob:') && !url.startsWith('http')) {
-        const backendUrl = import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:8080';
-        return `${backendUrl}/uploads/${url}`;
+        return `${BACKEND_URL}/uploads/${url}`;
     }
     return url;
 }
