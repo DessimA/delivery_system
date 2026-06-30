@@ -129,7 +129,6 @@ const validateForm = () => {
 
   if (!form.nome) { errors.nome = 'Nome é obrigatório.'; isValid = false; }
   
-  // TODO: Implement a proper CPF validation algorithm (checksum)
   if (!form.cpf) { errors.cpf = 'CPF é obrigatório.'; isValid = false; }
   else if (!/^(\d{3}\.){2}\d{3}-\d{2}$/.test(form.cpf)) { errors.cpf = 'CPF inválido. Use o formato 000.000.000-00'; isValid = false; }
 
@@ -142,7 +141,7 @@ const validateForm = () => {
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { errors.email = 'Formato de e-mail inválido.'; isValid = false; }
 
   if (!form.senha) { errors.senha = 'Senha é obrigatória.'; isValid = false; }
-  else if (form.senha.length < 6) { errors.senha = 'A senha deve ter no mínimo 6 caracteres.'; isValid = false; }
+  else if (form.senha.length < 8) { errors.senha = 'A senha deve ter no mínimo 8 caracteres.'; isValid = false; }
 
   if (form.senha !== form.confirmSenha) { errors.confirmSenha = 'As senhas não coincidem.'; isValid = false; }
 
