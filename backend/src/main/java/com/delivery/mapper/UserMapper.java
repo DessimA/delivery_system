@@ -1,5 +1,7 @@
 package com.delivery.mapper;
 
+import com.delivery.domain.valueobject.Cpf;
+import com.delivery.domain.valueobject.Email;
 import com.delivery.dto.UserRequestDTO;
 import com.delivery.dto.UserResponseDTO;
 import com.delivery.model.User;
@@ -9,14 +11,14 @@ import org.mapstruct.Mapping;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", imports = {Cpf.class, Email.class})
 public interface UserMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "roles", ignore = true)
     @Mapping(target = "establishment", ignore = true)
-    @Mapping(target = "cpf.value", source = "cpf")
-    @Mapping(target = "email.address", source = "email")
+    @Mapping(target = "cpf", expression = "java(new Cpf(dto.cpf()))")
+    @Mapping(target = "email", expression = "java(new Email(dto.email()))")
     User toEntity(UserRequestDTO dto);
 
     @Mapping(target = "cpf", source = "cpf.value")
@@ -27,7 +29,7 @@ public interface UserMapper {
     default List<String> mapRoles(User user) {
         if (user.getRoles() == null) return List.of();
         return user.getRoles().stream()
-                .map(role -> role.getName())
+                .map(role -> role.getAuthority())
                 .collect(Collectors.toList());
     }
 }
