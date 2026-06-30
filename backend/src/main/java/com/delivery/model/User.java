@@ -5,10 +5,7 @@ import com.delivery.domain.valueobject.Email;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -16,10 +13,13 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(of = "id")
+@ToString(exclude = {"roles", "establishment"})
 @Entity
 @Table(name = "users")
 public class User implements UserDetails {
@@ -34,7 +34,7 @@ public class User implements UserDetails {
     @Embedded
     private Cpf cpf;
 
-    @NotNull(message = "O campo data não pode ser nulo")
+    @NotNull(message = "O campo data nao pode ser nulo")
     @Column(name = "birth_date")
     private LocalDate birthDate;
 
@@ -44,7 +44,7 @@ public class User implements UserDetails {
     @Embedded
     private Email email;
 
-    @NotBlank(message = "A senha é obrigatória")
+    @NotBlank(message = "A senha e obrigatoria")
     private String password;
 
     @ManyToMany(fetch = FetchType.EAGER)

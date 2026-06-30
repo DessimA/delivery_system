@@ -2,15 +2,15 @@ package com.delivery.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(of = "id")
+@ToString(exclude = {"user"})
 @Entity
 @Table(name = "establishments")
 public class Establishment {
@@ -19,7 +19,7 @@ public class Establishment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "O nome do estabelecimento é obrigatório")
+    @NotBlank(message = "O nome do estabelecimento e obrigatorio")
     @Column(nullable = false)
     private String name;
 
