@@ -58,22 +58,19 @@ public class DeliveryService {
 
     @Transactional
     public DeliveryResponseDTO acceptDelivery(Long id) {
-        Delivery delivery = deliveryRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Delivery not found."));
-
-        if (delivery.getStatus() != DeliveryStatus.PENDENTE || delivery.getCourier() != null) {
-            throw new IllegalStateException("Delivery unavailable.");
-        }
-
         securityService.verifyRole(ROLE_DELIVERY);
         User courier = securityService.getAuthenticatedUser();
 
-        delivery.setCourier(courier);
-        delivery.setStatus(DeliveryStatus.ACEITA);
-        
-        Delivery saved = deliveryRepository.save(delivery);
-        notifyUpdate(saved);
-        return deliveryMapper.toResponseDTO(saved);
+        int updated = deliveryRepository.acceptAtomically(id, courier);
+        if (updated == 0) {
+            throw new IllegalStateException("Delivery unavailable or already accepted by another courier.");
+        }
+
+        Delivery delivery = deliveryRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("Delivery not found after atomic update."));
+
+        notifyUpdate(delivery);
+        return deliveryMapper.toResponseDTO(delivery);
     }
 
     @Transactional
@@ -86,6 +83,8 @@ public class DeliveryService {
         delivery.setStatus(newStatus);
         if (newStatus == DeliveryStatus.ENTREGUE) {
             delivery.setDeliveredAt(LocalDateTime.now());
+            delivery.getOrder().setStatus("DELIVERED");
+            orderRepository.save(delivery.getOrder());
         }
 
         Delivery saved = deliveryRepository.save(delivery);

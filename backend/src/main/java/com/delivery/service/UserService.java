@@ -59,6 +59,13 @@ public class UserService {
         user.setCpf(new com.delivery.domain.valueobject.Cpf(dto.cpf()));
         user.setBirthDate(dto.birthDate());
         user.setAddress(dto.address());
+
+        if (dto.email() != null && !dto.email().isBlank() && !dto.email().equals(email)) {
+            if (userRepository.findByEmailAddress(dto.email()) != null) {
+                throw new EmailAlreadyExistsException("Email ja cadastrado.");
+            }
+            user.setEmail(new com.delivery.domain.valueobject.Email(dto.email()));
+        }
         
         if (dto.password() != null && !dto.password().isBlank()) {
             user.setPassword(passwordEncoder.encode(dto.password()));

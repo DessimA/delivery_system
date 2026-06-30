@@ -4,9 +4,10 @@ import com.delivery.dto.OrderRequestDTO;
 import com.delivery.dto.OrderResponseDTO;
 import com.delivery.mapper.OrderMapper;
 import com.delivery.model.Delivery;
+import com.delivery.model.DeliveryStatus;
+import com.delivery.model.Establishment;
 import com.delivery.model.Order;
 import com.delivery.model.Product;
-import com.delivery.model.DeliveryStatus;
 import com.delivery.repository.OrderRepository;
 import com.delivery.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +33,9 @@ public class OrderService {
         validateRequest(request);
 
         List<Product> products = productRepository.findAllById(request.productIds());
-        
+
+        validateSameEstablishment(products);
+
         Order order = Order.builder()
                 .customerId(customerId)
                 .deliveryAddress(request.deliveryAddress())
@@ -43,9 +46,12 @@ public class OrderService {
                 .build();
 
         order.calculateTotal();
-        
+
+        String originAddress = resolveOriginAddress(products);
+
         Delivery delivery = Delivery.builder()
                 .order(order)
+                .originAddress(originAddress)
                 .destinationAddress(order.getDeliveryAddress())
                 .status(DeliveryStatus.PENDENTE)
                 .createdAt(LocalDateTime.now())
@@ -53,6 +59,25 @@ public class OrderService {
         order.setDelivery(delivery);
 
         return orderMapper.toResponseDTO(orderRepository.save(order));
+    }
+
+    private void validateSameEstablishment(List<Product> products) {
+        if (products == null || products.isEmpty()) return;
+        Long firstEstId = products.get(0).getEstablishment() != null
+                ? products.get(0).getEstablishment().getId() : null;
+        for (Product p : products) {
+            Long estId = p.getEstablishment() != null ? p.getEstablishment().getId() : null;
+            if (!java.util.Objects.equals(firstEstId, estId)) {
+                throw new IllegalArgumentException("Todos os produtos devem pertencer ao mesmo estabelecimento.");
+            }
+        }
+    }
+
+    private String resolveOriginAddress(List<Product> products) {
+        if (products == null || products.isEmpty()) return null;
+        Establishment establishment = products.get(0).getEstablishment();
+        if (establishment != null) return establishment.getAddress();
+        return null;
     }
 
     public List<OrderResponseDTO> findMyOrders(Long customerId) {
