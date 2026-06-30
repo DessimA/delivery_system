@@ -30,6 +30,11 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: password
       SPRING_PROFILES_ACTIVE: prod
+      JWT_SECRET: tORPOOZxsAQzwHgc0o+seCwFz5VW0w/J4FxQUCPeBxY=
+      CORS_ORIGINS: http://localhost
+      FRONTEND_URL: http://localhost
+    volumes:
+      - uploads_data:/app/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -54,3 +59,4 @@ networks:
 
 volumes:
   postgres_data:
+  uploads_data:
