@@ -6,12 +6,14 @@ import com.delivery.model.*;
 import com.delivery.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 
 @Component
+@Profile("dev")
 @RequiredArgsConstructor
 public class DataLoader implements CommandLineRunner {
 
@@ -49,7 +51,7 @@ public class DataLoader implements CommandLineRunner {
                     .name("Admin System")
                     .email(new Email(email))
                     .password(passwordEncoder.encode("123456"))
-                    .cpf(new Cpf("00000000000"))
+                    .cpf(new Cpf("52998224725"))
                     .birthDate(java.time.LocalDate.of(1990, 1, 1))
                     .address("Admin Street, 1")
                     .roles(Collections.singletonList(adminRole))
@@ -71,7 +73,7 @@ public class DataLoader implements CommandLineRunner {
                     .name("Owner Pizzaria")
                     .email(new Email(email))
                     .password(passwordEncoder.encode("123456"))
-                    .cpf(new Cpf("11111111111"))
+                    .cpf(new Cpf("93541134780"))
                     .birthDate(java.time.LocalDate.of(1985, 5, 15))
                     .address("Rua da Pizza, 123")
                     .roles(Collections.singletonList(restaurantRole))
