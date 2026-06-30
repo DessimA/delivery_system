@@ -33,7 +33,7 @@ class UserServiceTest extends AbstractServiceTest {
     void shouldCreateUserSuccessfully() {
         // Given
         UserRequestDTO request = new UserRequestDTO(
-            "Test", "12345678901", LocalDate.of(1990, 1, 1), "Address", "test@test.com", "password"
+            "Test", "52998224725", LocalDate.of(1990, 1, 1), "Address", "test@test.com", "password123"
         );
         User user = new User();
         Role role = new Role();

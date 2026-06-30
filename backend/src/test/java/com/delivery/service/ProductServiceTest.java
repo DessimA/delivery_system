@@ -24,6 +24,7 @@ public class ProductServiceTest extends AbstractServiceTest {
     @Mock private ProductRepository productRepository;
     @Mock private EstablishmentRepository establishmentRepository;
     @Mock private ProductMapper productMapper;
+    @Mock private FileStorageService fileStorageService;
 
     @InjectMocks private ProductService productService;
 
@@ -37,7 +38,8 @@ public class ProductServiceTest extends AbstractServiceTest {
             productRepository, 
             establishmentRepository, 
             productMapper, 
-            securityService
+            securityService,
+            fileStorageService
         );
 
         Establishment est = new Establishment();
@@ -73,7 +75,7 @@ public class ProductServiceTest extends AbstractServiceTest {
         when(productRepository.findById(anyLong())).thenReturn(Optional.of(product));
         when(productRepository.save(any(Product.class))).thenReturn(product);
 
-        productService.updateProduct(10L, new ProductRequestDTO("N", "D", 10.0, 1L));
+        productService.updateProduct(10L, new ProductRequestDTO("N", "D", 10.0, 1L), null);
 
         verify(productRepository).save(any(Product.class));
     }

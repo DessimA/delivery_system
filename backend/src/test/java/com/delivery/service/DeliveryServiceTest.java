@@ -11,6 +11,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.util.Optional;
 
@@ -23,27 +24,37 @@ class DeliveryServiceTest extends AbstractServiceTest {
     @Mock private DeliveryRepository deliveryRepository;
     @Mock private OrderRepository orderRepository;
     @Mock private DeliveryMapper deliveryMapper;
+    @Mock private SimpMessagingTemplate messagingTemplate;
 
     @InjectMocks private DeliveryService deliveryService;
 
     @Test
     @DisplayName("Deve aceitar uma entrega disponivel")
     void shouldAcceptDelivery() {
-        // Given
         User courier = new User();
         courier.setId(2L);
         Delivery delivery = Delivery.builder().id(1L).status(DeliveryStatus.PENDENTE).build();
 
         mockAuthenticatedUser(courier);
+        when(deliveryRepository.acceptAtomically(eq(1L), any())).thenReturn(1);
         when(deliveryRepository.findById(1L)).thenReturn(Optional.of(delivery));
-        when(deliveryRepository.save(any())).thenReturn(delivery);
         when(deliveryMapper.toResponseDTO(any())).thenReturn(mock(DeliveryResponseDTO.class));
 
-        // When
         DeliveryResponseDTO result = deliveryService.acceptDelivery(1L);
 
-        // Then
         assertThat(result).isNotNull();
-        verify(deliveryRepository).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve lancar erro se entrega ja foi aceita por outro entregador")
+    void shouldThrowWhenDeliveryAlreadyAccepted() {
+        User courier = new User();
+        courier.setId(2L);
+
+        mockAuthenticatedUser(courier);
+        when(deliveryRepository.acceptAtomically(eq(1L), any())).thenReturn(0);
+
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class,
+            () -> deliveryService.acceptDelivery(1L));
     }
 }
