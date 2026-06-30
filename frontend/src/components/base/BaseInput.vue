@@ -2,8 +2,18 @@
   <div :class="['base-input-wrapper', { 'has-error': error }]">
     <label v-if="label" :for="id" class="base-input-label">{{ label }}</label>
     <div class="base-input-control">
-      <BaseIcon v-if="icon" :name="icon" class="base-input-icon" />
+      <BaseIcon v-if="icon && type !== 'textarea'" :name="icon" class="base-input-icon" />
+      <textarea
+        v-if="type === 'textarea'"
+        :id="id"
+        :value="modelValue"
+        :placeholder="placeholder"
+        :disabled="disabled"
+        @input="updateValue"
+        class="base-input base-textarea"
+      ></textarea>
       <input
+        v-else
         :id="id"
         :type="type"
         :value="modelValue"

@@ -33,11 +33,11 @@ const props = defineProps({
 });
 
 const deliverySteps = [
-  { status: 'PENDING', label: 'Aguardando Entregador' },
-  { status: 'ACCEPTED', label: 'Entrega Aceita' },
-  { status: 'PICKED_UP', label: 'Pedido Coletado' },
-  { status: 'IN_TRANSIT', label: 'A Caminho' },
-  { status: 'DELIVERED', label: 'Entregue' },
+  { status: 'PENDENTE', label: 'Aguardando Entregador' },
+  { status: 'ACEITA', label: 'Entrega Aceita' },
+  { status: 'COLETADA', label: 'Pedido Coletado' },
+  { status: 'EM_ROTA', label: 'A Caminho' },
+  { status: 'ENTREGUE', label: 'Entregue' },
 ];
 
 const currentStepIndex = computed(() => {

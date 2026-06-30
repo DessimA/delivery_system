@@ -88,8 +88,7 @@ const fetchOrders = async () => {
           
           const index = orders.value.findIndex(o => o.id === order.id);
           if (index !== -1) {
-            orders.value[index].delivery = deliveryUpdate; 
-            orders.value[index].status = deliveryUpdate.status; 
+            orders.value[index].delivery = deliveryUpdate;
           }
         };
         const topic = `/topic/orders/${order.id}`;

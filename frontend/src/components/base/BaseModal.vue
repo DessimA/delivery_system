@@ -52,7 +52,6 @@ const closeModal = () => {
 
 // Add/remove body-no-scroll class to prevent scrolling when modal is open
 watch(() => props.modelValue, (newValue) => {
-  console.log('BaseModal modelValue prop changed:', newValue);
   if (newValue) {
     document.body.classList.add('body-no-scroll');
   } else {

@@ -117,7 +117,6 @@ const removeItem = (productId) => {
 };
 
 const startCheckout = () => {
-  console.log('startCheckout called');
   isCheckoutModalOpen.value = true;
 };
 
