@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
 public record UserRequestDTO(
@@ -24,5 +25,6 @@ public record UserRequestDTO(
     @Email(message = "Invalid email format")
     String email,
 
+    @Size(min = 8, message = "Password must have at least 8 characters")
     String password
 ) {}
