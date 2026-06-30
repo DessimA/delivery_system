@@ -7,7 +7,9 @@ import com.delivery.mapper.EstablishmentMapper;
 import com.delivery.service.EstablishmentService;
 import com.delivery.service.ProductService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -30,14 +32,19 @@ public class RestauranteController {
         return productService.listMyProducts();
     }
 
-    @PostMapping("/produtos")
-    public ProductResponseDTO criarProduto(@RequestBody ProductRequestDTO productRequestDTO) {
-        return productService.createProduct(productRequestDTO, null);
+    @PostMapping(value = "/produtos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ProductResponseDTO criarProduto(
+            @RequestPart("data") ProductRequestDTO dto,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
+        return productService.createProduct(dto, image);
     }
 
-    @PutMapping("/produtos/{id}")
-    public ProductResponseDTO atualizarProduto(@PathVariable Long id, @RequestBody ProductRequestDTO productRequestDTO) {
-        return productService.updateProduct(id, productRequestDTO);
+    @PutMapping(value = "/produtos/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ProductResponseDTO atualizarProduto(
+            @PathVariable Long id,
+            @RequestPart("data") ProductRequestDTO dto,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
+        return productService.updateProduct(id, dto, image);
     }
 
     @DeleteMapping("/produtos/{id}")
