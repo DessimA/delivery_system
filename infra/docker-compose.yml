@@ -1,0 +1,78 @@
+services:
+  db:
+    image: postgres:16.6-alpine
+    container_name: delivery_db
+    environment:
+      POSTGRES_DB: delivery_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d delivery_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: delivery_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@delivery.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../infra/docker/backend/Dockerfile.dev
+    container_name: delivery_backend
+    ports:
+      - "8080:8080"
+    env_file: ../.env
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/delivery_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_PROFILES_ACTIVE: dev
+      JWT_SECRET: ${JWT_SECRET:-tORPOOZxsAQzwHgc0o+seCwFz5VW0w/J4FxQUCPeBxY=}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+    volumes:
+      - ../backend/src:/app/src
+      - ../backend/pom.xml:/app/pom.xml
+      - uploads_data:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: ../infra/docker/frontend/Dockerfile.dev
+    container_name: delivery_frontend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_APP_API_BASE_URL: ${VITE_APP_API_BASE_URL:-http://localhost:8080/api}
+      VITE_APP_BACKEND_URL: ${VITE_APP_BACKEND_URL:-http://localhost:8080}
+    volumes:
+      - ../frontend/src:/app/src
+      - ../frontend/index.html:/app/index.html
+      - ../frontend/vite.config.js:/app/vite.config.js
+      - /app/node_modules
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  uploads_data:

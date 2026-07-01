@@ -1,0 +1,59 @@
+{
+  "name": "Delivery System Dev",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+  },
+  "forwardPorts": [8080, 5173, 5432, 5050],
+  "portsAttributes": {
+    "8080": {
+      "label": "Backend API"
+    },
+    "5173": {
+      "label": "Frontend (Vite)"
+    },
+    "5432": {
+      "label": "PostgreSQL"
+    },
+    "5050": {
+      "label": "pgAdmin"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "vscjava.vscode-spring-initializr",
+        "vscjava.vscode-spring-boot-dashboard",
+        "Vue.volar",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-azuretools.vscode-docker",
+        "visualstudioexptteam.vscodeintellicode"
+      ],
+      "settings": {
+        "java.compile.nullAnalysis.mode": "automatic",
+        "java.configuration.maven.userSettings": "/workspace/backend/.mvn/settings.xml",
+        "maven.executable.path": "/usr/bin/mvn",
+        "maven.terminal.useJavaHome": true,
+        "spring-boot.ls.checkJVM": false,
+        "files.watcherExclude": {
+          "**/target/**": true,
+          "**/node_modules/**": true
+        },
+        "search.exclude": {
+          "**/target/**": true,
+          "**/node_modules/**": true
+        }
+      }
+    }
+  },
+  "postCreateCommand": "cp -n .env.example .env 2>/dev/null; echo '✅ Dev container ready!\n   Run: cd infra && docker compose up -d'",
+  "remoteUser": "vscode",
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+  ],
+  "workspaceFolder": "/workspace"
+}
