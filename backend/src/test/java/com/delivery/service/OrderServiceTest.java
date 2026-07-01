@@ -14,6 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,7 +36,7 @@ class OrderServiceTest {
         // Given
         Long customerId = 1L;
         OrderRequestDTO request = new OrderRequestDTO("Rua Teste", List.of(10L));
-        Product mockProduct = Product.builder().id(10L).price(50.0).build();
+        Product mockProduct = Product.builder().id(10L).price(BigDecimal.valueOf(50.0)).build();
         
         when(productRepository.findAllById(any())).thenReturn(List.of(mockProduct));
         when(orderRepository.save(any(Order.class))).thenAnswer(i -> i.getArguments()[0]);

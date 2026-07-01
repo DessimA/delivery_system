@@ -13,10 +13,14 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
+import java.math.BigDecimal;
 import java.util.Optional;
+
+import org.springframework.web.multipart.MultipartFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 public class ProductServiceTest extends AbstractServiceTest {
@@ -68,6 +72,28 @@ public class ProductServiceTest extends AbstractServiceTest {
     }
 
     @Test
+    void shouldCreateProductAndSanitizeFilename() {
+        mockAuthenticatedUser(owner);
+        mockIsAdmin(owner, false);
+
+        ProductRequestDTO dto = new ProductRequestDTO("Test", "Desc", BigDecimal.valueOf(10.0), 1L);
+        MultipartFile mockFile = mock(MultipartFile.class);
+        when(mockFile.isEmpty()).thenReturn(false);
+        when(productMapper.toEntity(dto)).thenReturn(product);
+        when(fileStorageService.store(mockFile)).thenReturn("uuid-file.jpg");
+        when(productRepository.save(any(Product.class))).thenReturn(product);
+        when(productMapper.toResponseDTO(any())).thenReturn(mock(ProductResponseDTO.class));
+
+        ProductResponseDTO result = productService.createProduct(dto, mockFile);
+
+        assertThat(result).isNotNull();
+        verify(fileStorageService).store(mockFile);
+        verify(productRepository).save(argThat(p ->
+            p.getImageUrl() == null || p.getImageUrl().equals("uuid-file.jpg")
+        ));
+    }
+
+    @Test
     void shouldUpdateProductWhenAdmin() {
         mockAuthenticatedUser(admin);
         mockIsAdmin(admin, true);
@@ -75,7 +101,7 @@ public class ProductServiceTest extends AbstractServiceTest {
         when(productRepository.findById(anyLong())).thenReturn(Optional.of(product));
         when(productRepository.save(any(Product.class))).thenReturn(product);
 
-        productService.updateProduct(10L, new ProductRequestDTO("N", "D", 10.0, 1L), null);
+        productService.updateProduct(10L, new ProductRequestDTO("N", "D", BigDecimal.valueOf(10.0), 1L), null);
 
         verify(productRepository).save(any(Product.class));
     }
