@@ -5,8 +5,10 @@ WORKDIR /app
 # Install Maven. Alpine Linux uses apk.
 RUN apk add --no-cache maven
 
-# Copy project files
+# Copy dependency manifests first for caching
 COPY pom.xml .
+RUN mvn dependency:go-offline -B
+
 # Copy src and resources
 COPY src src
 
