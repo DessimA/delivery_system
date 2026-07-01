@@ -6,14 +6,14 @@ import com.delivery.model.*;
 import com.delivery.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.Collections;
 
 @Component
-@Profile("dev")
 @RequiredArgsConstructor
 public class DataLoader implements CommandLineRunner {
 
@@ -22,6 +22,7 @@ public class DataLoader implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
     private final EstablishmentRepository establishmentRepository;
     private final ProductRepository productRepository;
+    private final Environment environment;
 
     @Override
     public void run(String... args) throws Exception {
@@ -30,8 +31,14 @@ public class DataLoader implements CommandLineRunner {
         Role restaurantRole = createRoleIfNotFound("RESTAURANT");
         createRoleIfNotFound("DELIVERY");
 
-        createAdminUser(adminRole);
-        createPizzaria(restaurantRole);
+        if (isDevProfile()) {
+            createAdminUser(adminRole);
+            createPizzaria(restaurantRole);
+        }
+    }
+
+    private boolean isDevProfile() {
+        return Arrays.asList(environment.getActiveProfiles()).contains("dev");
     }
 
     private Role createRoleIfNotFound(String name) {

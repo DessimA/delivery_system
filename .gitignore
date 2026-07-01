@@ -2,3 +2,8 @@ backend/target/
 frontend/node_modules/
 backend/uploads/
 *.log
+
+# Environment files (user-specific, may contain secrets)
+.env
+.env.local
+.env.*.local
