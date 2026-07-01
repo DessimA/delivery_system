@@ -1,16 +1,14 @@
-# Dockerfile para Desenvolvimento com Hot-Reload
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Copiar package.json e package-lock.json
+# Copy dependency manifests first for layer caching
 COPY package*.json ./
+RUN npm ci
 
-# Instalar dependências
-RUN npm install
+# Copy the rest of the source (will be overridden by volume mount in dev)
+COPY . .
 
-# Expor porta do Vite dev server
 EXPOSE 5173
 
-# Comando padrão (será sobrescrito no docker-compose)
 CMD ["npm", "run", "dev"]

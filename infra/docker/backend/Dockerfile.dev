@@ -1,0 +1,19 @@
+FROM eclipse-temurin:21-jdk-alpine
+
+WORKDIR /app
+
+# Install Maven and inotify-tools (file watcher for hot-reload)
+RUN apk add --no-cache maven inotify-tools
+
+# Cache Maven dependencies (layer is reused unless pom.xml changes)
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
+
+# Copy source code and entrypoint script
+COPY src src
+COPY scripts/dev-entrypoint.sh /app/dev-entrypoint.sh
+RUN chmod +x /app/dev-entrypoint.sh
+
+EXPOSE 8080
+
+ENTRYPOINT ["/app/dev-entrypoint.sh"]
