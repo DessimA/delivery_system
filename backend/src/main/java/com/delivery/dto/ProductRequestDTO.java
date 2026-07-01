@@ -3,6 +3,7 @@ package com.delivery.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import java.math.BigDecimal;
 
 public record ProductRequestDTO(
     @NotBlank(message = "Product name is required")
@@ -13,7 +14,7 @@ public record ProductRequestDTO(
 
     @NotNull(message = "Price is required")
     @Positive(message = "Price must be positive")
-    Double price,
+    BigDecimal price,
 
     Long establishmentId
 ) {}

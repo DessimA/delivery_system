@@ -10,9 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.UUID;
+
 
 @RestController
 @RequestMapping("/api/payments")
@@ -25,7 +23,7 @@ public class PaymentController {
     @PostMapping("/pix/generate")
     public ResponseEntity<PixResponseDTO> generatePix(@Valid @RequestBody PixRequestDTO pixRequestDTO) {
         User user = securityService.getAuthenticatedUser();
-        PixResponseDTO response = paymentService.createPixPayment(pixRequestDTO.orderId(), user);
+        PixResponseDTO response = paymentService.createPixPayment(pixRequestDTO.orderId(), pixRequestDTO.amount(), user);
 
         return ResponseEntity.ok(response);
     }
@@ -34,5 +32,11 @@ public class PaymentController {
     public ResponseEntity<String> getStatus(@PathVariable Long id) {
         User user = securityService.getAuthenticatedUser();
         return ResponseEntity.ok(paymentService.getPaymentStatus(id, user));
+    }
+
+    @PostMapping("/confirm/{transactionId}")
+    public ResponseEntity<Void> confirmPayment(@PathVariable String transactionId) {
+        paymentService.confirmPayment(transactionId);
+        return ResponseEntity.ok().build();
     }
 }

@@ -3,6 +3,7 @@ package com.delivery.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -38,21 +39,22 @@ public class Order {
     @Column(name = "delivery_address")
     private String deliveryAddress;
 
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private OrderStatus status;
 
-    @Column(name = "delivery_fee")
-    private Float deliveryFee;
+    @Column(name = "delivery_fee", precision = 10, scale = 2)
+    private BigDecimal deliveryFee;
 
-    @Column(name = "total_value")
-    private Float totalValue;
+    @Column(name = "total_value", precision = 10, scale = 2)
+    private BigDecimal totalValue;
 
     @OneToOne(mappedBy = "order", cascade = CascadeType.ALL)
     private Delivery delivery;
 
     public void calculateTotal() {
-        double productsTotal = products.stream()
-                .mapToDouble(Product::getPrice)
-                .sum();
-        this.totalValue = (float) (productsTotal + (deliveryFee != null ? deliveryFee : 0));
+        BigDecimal productsTotal = products.stream()
+                .map(Product::getPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        this.totalValue = productsTotal.add(deliveryFee != null ? deliveryFee : BigDecimal.ZERO);
     }
 }

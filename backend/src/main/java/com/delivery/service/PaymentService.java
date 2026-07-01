@@ -3,6 +3,7 @@ package com.delivery.service;
 import com.delivery.dto.PixResponseDTO;
 import com.delivery.model.Payment;
 import com.delivery.model.Order;
+import com.delivery.model.OrderStatus;
 import com.delivery.model.User;
 import com.delivery.repository.PaymentRepository;
 import com.delivery.repository.OrderRepository;
@@ -28,19 +29,22 @@ public class PaymentService {
     private static final String MOCK_COPY_PASTE = "00020126330014br.gov.bcb.pix0111+5511999999999520400005303986540510.005802BR5913NOME_RECEBEDOR6008CIDADE62070503***6304E2A4";
 
     @Transactional
-    public PixResponseDTO createPixPayment(Long orderId, User user) {
+    public PixResponseDTO createPixPayment(Long orderId, BigDecimal amount, User user) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found."));
 
         validateOrderOwnership(order, user);
 
-        BigDecimal amount = BigDecimal.valueOf(order.getTotalValue()).setScale(2, RoundingMode.HALF_EVEN);
+        BigDecimal orderTotal = order.getTotalValue().setScale(2, RoundingMode.HALF_EVEN);
+        if (amount.compareTo(orderTotal) != 0) {
+            throw new IllegalArgumentException("Payment amount does not match order total.");
+        }
 
         String transactionId = UUID.randomUUID().toString();
 
         Payment payment = Payment.builder()
                 .order(order)
-                .amount(amount.doubleValue())
+                .amount(orderTotal)
                 .transactionId(transactionId)
                 .status("PENDING")
                 .paymentDate(LocalDateTime.now())
@@ -55,7 +59,7 @@ public class PaymentService {
             MOCK_COPY_PASTE,
             transactionId,
             expiresAt,
-            amount.doubleValue()
+            orderTotal
         );
     }
 
@@ -80,7 +84,7 @@ public class PaymentService {
         paymentRepository.save(payment);
 
         Order order = payment.getOrder();
-        order.setStatus("PAID");
+        order.setStatus(OrderStatus.PAID);
         orderRepository.save(order);
     }
 

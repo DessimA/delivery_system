@@ -3,10 +3,12 @@ package com.delivery.service;
 import com.delivery.dto.OrderRequestDTO;
 import com.delivery.dto.OrderResponseDTO;
 import com.delivery.mapper.OrderMapper;
+import com.delivery.exception.ResourceNotFoundException;
 import com.delivery.model.Delivery;
 import com.delivery.model.DeliveryStatus;
 import com.delivery.model.Establishment;
 import com.delivery.model.Order;
+import com.delivery.model.OrderStatus;
 import com.delivery.model.Product;
 import com.delivery.repository.OrderRepository;
 import com.delivery.repository.ProductRepository;
@@ -14,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -21,8 +24,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OrderService {
 
-    private static final String DEFAULT_STATUS = "WAITING_PAYMENT";
-    private static final float DEFAULT_FEE = 5.0f;
+    private static final BigDecimal DEFAULT_FEE = BigDecimal.valueOf(5.00);
 
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
@@ -34,6 +36,10 @@ public class OrderService {
 
         List<Product> products = productRepository.findAllById(request.productIds());
 
+        if (products.size() != java.util.Set.copyOf(request.productIds()).size()) {
+            throw new ResourceNotFoundException("One or more products not found.");
+        }
+
         validateSameEstablishment(products);
 
         Order order = Order.builder()
@@ -41,7 +47,7 @@ public class OrderService {
                 .deliveryAddress(request.deliveryAddress())
                 .products(products)
                 .orderDate(LocalDateTime.now())
-                .status(DEFAULT_STATUS)
+                .status(OrderStatus.WAITING_PAYMENT)
                 .deliveryFee(DEFAULT_FEE)
                 .build();
 
