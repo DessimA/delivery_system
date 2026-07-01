@@ -14,5 +14,10 @@ export const establishmentService = {
   async getProducts(id) {
     const response = await api.get(`/establishments/${id}/products`);
     return response.data;
+  },
+
+  async getMyEstablishment() {
+    const response = await api.get('/restaurant/my-establishment');
+    return response.data;
   }
 };

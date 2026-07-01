@@ -77,7 +77,8 @@
 import { ref, onMounted } from 'vue';
 import { useApi } from '@/composables/useApi';
 import { useNotifications } from '@/composables/useNotifications';
-import api from '@/plugins/axios';
+import { establishmentService } from '@/services/establishment.service';
+import { productService } from '@/services/product.service';
 
 import BaseButton from '@/components/base/BaseButton.vue';
 import BaseModal from '@/components/base/BaseModal.vue';
@@ -104,8 +105,8 @@ onMounted(() => {
 
 const fetchEstablishment = async () => {
   try {
-    const response = await executeEstablishment(() => api.get('/restaurante/meu-estabelecimento'));
-    establishment.value = response.data;
+    const response = await executeEstablishment(() => establishmentService.getMyEstablishment());
+    establishment.value = response;
   } catch (error) {
     addNotification({ type: 'error', message: 'Falha ao carregar dados do estabelecimento.' });
     console.error('Failed to fetch establishment:', error);
@@ -114,8 +115,8 @@ const fetchEstablishment = async () => {
 
 const fetchProducts = async () => {
   try {
-    const response = await executeProducts(() => api.get('/restaurante/meus-produtos'));
-    products.value = response.data;
+    const response = await executeProducts(() => productService.getMyProducts());
+    products.value = response;
   } catch (error) {
     addNotification({ type: 'error', message: 'Falha ao carregar produtos.' });
     console.error('Failed to fetch products:', error);
@@ -157,15 +158,10 @@ const handleProductSave = async (productData) => {
     };
 
     if (productData.id) {
-      await executeProducts(() => api.put(`/restaurante/produtos/${productData.id}`, payload));
+      await executeProducts(() => productService.update(productData.id, payload));
       addNotification({ type: 'success', message: 'Produto atualizado com sucesso!' });
     } else {
-      const formData = new FormData();
-      formData.append('data', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
-      if (productData.imageFile) {
-        formData.append('image', productData.imageFile);
-      }
-      await executeProducts(() => api.post('/restaurante/produtos', formData));
+      await executeProducts(() => productService.create(payload, productData.imageFile));
       addNotification({ type: 'success', message: 'Produto adicionado com sucesso!' });
     }
     closeProductModal();
@@ -182,7 +178,7 @@ const deleteProduct = async () => {
   if (!selectedProduct.value) return;
   deleting.value = true;
   try {
-    await executeProducts(() => api.delete(`/restaurante/produtos/${selectedProduct.value.id}`));
+    await executeProducts(() => productService.delete(selectedProduct.value.id));
     addNotification({ type: 'success', message: 'Produto removido com sucesso!' });
     closeDeleteModal();
     fetchProducts();

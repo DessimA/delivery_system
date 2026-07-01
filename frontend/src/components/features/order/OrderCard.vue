@@ -116,7 +116,10 @@ const formatStatus = (status) => {
     
     &.waiting_payment { background-color: #fff3cd; color: #856404; }
     &.paid { background-color: #d4edda; color: #155724; }
+    &.preparing { background-color: #cce5ff; color: #004085; }
+    &.in_transit { background-color: #d6d8db; color: #383d41; }
     &.delivered { background-color: #d1ecf1; color: #0c5460; }
+    &.cancelled { background-color: #f8d7da; color: #721c24; }
   }
 
   &__content {

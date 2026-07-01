@@ -74,7 +74,7 @@ const startPaymentCheck = (orderId) => {
   paymentCheckInterval = setInterval(async () => {
     try {
       const status = await paymentService.getStatus(orderId);
-      if (status === 'CONFIRMADO' || status === 'PAID') {
+      if (status === 'CONFIRMED') {
         addNotification({ type: 'success', message: 'Pagamento PIX confirmado com sucesso!' });
         clearInterval(paymentCheckInterval);
         router.push({ name: 'Orders' });
