@@ -4,6 +4,7 @@ import com.delivery.exception.UserNotFoundException;
 import com.delivery.model.User;
 import com.delivery.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -16,7 +17,15 @@ public class SecurityService {
     private final UserRepository userRepository;
 
     public User getAuthenticatedUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new SecurityException("No authenticated user found.");
+        }
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof User user) {
+            return user;
+        }
+        String email = authentication.getName();
         User user = userRepository.findByEmailAddress(email);
         if (user == null) {
             throw new UserNotFoundException("Inconsistencia de dados: usuario autenticado nao encontrado: " + email);
