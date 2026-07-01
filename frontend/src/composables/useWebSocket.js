@@ -54,6 +54,7 @@ export function useWebSocket() {
       stompClient.value.disconnect(() => {
         isConnected.value = false;
         activeSubscriptions.clear();
+        subscriptionQueue.length = 0;
         console.log('Disconnected from WebSocket');
       });
     }

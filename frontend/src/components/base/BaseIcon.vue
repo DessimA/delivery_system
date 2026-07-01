@@ -4,8 +4,13 @@
 
 <script setup>
 import { computed } from 'vue';
-// Import all icons from lucide-vue-next
-import * as LucideIcons from 'lucide-vue-next';
+import {
+  AlertCircle, AlertTriangle, Bell, Box, Calendar, Camera, CheckCircle,
+  ChevronDown, ChevronRight, ChevronUp, ClipboardList, CreditCard,
+  Edit2, Info, Lock, LogOut, Mail, MapPin, Menu, Minus, Plus,
+  Search, SearchX, Settings, ShoppingCart, Store, Trash2, Trash,
+  User, UserCircle, X, XCircle
+} from 'lucide-vue-next';
 
 const props = defineProps({
   name: {
@@ -22,16 +27,21 @@ const props = defineProps({
   },
 });
 
+const iconMap = {
+  'alert-circle': AlertCircle, 'alert-triangle': AlertTriangle, 'bell': Bell,
+  'box': Box, 'calendar': Calendar, 'camera': Camera, 'check-circle': CheckCircle,
+  'chevron-down': ChevronDown, 'chevron-right': ChevronRight, 'chevron-up': ChevronUp,
+  'clipboard-list': ClipboardList, 'credit-card': CreditCard, 'edit-2': Edit2,
+  'info': Info, 'lock': Lock, 'log-out': LogOut, 'mail': Mail, 'map-pin': MapPin,
+  'menu': Menu, 'minus': Minus, 'plus': Plus, 'search': Search, 'search-x': SearchX,
+  'settings': Settings, 'shopping-cart': ShoppingCart, 'store': Store,
+  'trash': Trash, 'trash-2': Trash2, 'user': User, 'user-circle': UserCircle,
+  'x': X, 'x-circle': XCircle
+};
+
 const iconComponent = computed(() => {
   if (!props.name) return null;
-  // Convert kebab-case to PascalCase for icon name
-  const pascalCaseName = props.name.replace(/(^\w|-\w)/g, (g) => g.toUpperCase().replace(/-/, ''));
-  const icon = LucideIcons[pascalCaseName];
-  if (!icon) {
-    console.warn(`Icon '${props.name}' not found. Falling back to 'AlertCircle'.`);
-    return LucideIcons.AlertCircle; // Fallback icon
-  }
-  return icon;
+  return iconMap[props.name] || AlertCircle;
 });
 </script>
 
