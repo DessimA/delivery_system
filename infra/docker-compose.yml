@@ -4,8 +4,8 @@ services:
     container_name: delivery_db
     environment:
       POSTGRES_DB: delivery_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password is required}
     ports:
       - "5432:5432"
     volumes:
@@ -21,8 +21,8 @@ services:
     image: dpage/pgadmin4:latest
     container_name: delivery_pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@delivery.com
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@delivery.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
     ports:
       - "5050:80"
     depends_on:
@@ -40,7 +40,7 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/delivery_db
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-password}
       SPRING_PROFILES_ACTIVE: dev
       JWT_SECRET: ${JWT_SECRET:-tORPOOZxsAQzwHgc0o+seCwFz5VW0w/J4FxQUCPeBxY=}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}

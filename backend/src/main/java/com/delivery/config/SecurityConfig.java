@@ -73,6 +73,12 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.DELETE, "/api/establishments/**").hasAuthority("ROLE_ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/orders").hasAuthority("ROLE_ADMIN")
                 .requestMatchers("/api/restaurant/**").hasAuthority("ROLE_RESTAURANT")
+                .requestMatchers("/api/restaurante/**").hasAuthority("ROLE_RESTAURANT")
+
+                // Actuator - only health and info are exposed, sensitive endpoints require ADMIN
+                .requestMatchers("/actuator/health").permitAll()
+                .requestMatchers("/actuator/info").permitAll()
+                .requestMatchers("/actuator/**").hasAuthority("ROLE_ADMIN")
 
                 // Delivery/Courier Routes
                 .requestMatchers("/api/deliveries/available").hasAuthority("ROLE_DELIVERY")
