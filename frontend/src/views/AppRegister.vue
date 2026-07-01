@@ -123,6 +123,21 @@ Object.keys(form).forEach(key => {
   });
 });
 
+const isValidCpf = (cpf) => {
+  const cleaned = cpf.replace(/\D/g, '');
+  if (cleaned.length !== 11) return false;
+  if (cleaned.split('').every(c => c === cleaned[0])) return false;
+
+  const digits = cleaned.split('').map(Number);
+  const sum1 = digits.slice(0, 9).reduce((acc, d, i) => acc + d * (10 - i), 0);
+  const rem1 = (sum1 * 10) % 11;
+  if (rem1 === 10 ? 0 : rem1 !== digits[9]) return false;
+
+  const sum2 = digits.slice(0, 10).reduce((acc, d, i) => acc + d * (11 - i), 0);
+  const rem2 = (sum2 * 10) % 11;
+  return (rem2 === 10 ? 0 : rem2) === digits[10];
+};
+
 const validateForm = () => {
   Object.keys(errors).forEach(key => { errors[key] = ''; });
   let isValid = true;
@@ -131,6 +146,7 @@ const validateForm = () => {
   
   if (!form.cpf) { errors.cpf = 'CPF é obrigatório.'; isValid = false; }
   else if (!/^(\d{3}\.){2}\d{3}-\d{2}$/.test(form.cpf)) { errors.cpf = 'CPF inválido. Use o formato 000.000.000-00'; isValid = false; }
+  else if (!isValidCpf(form.cpf)) { errors.cpf = 'CPF inválido. Digite um CPF verdadeiro.'; isValid = false; }
 
   if (!form.dataNascimento) { errors.dataNascimento = 'Data de Nascimento é obrigatória.'; isValid = false; }
   else if (new Date(form.dataNascimento) >= new Date()) { errors.dataNascimento = 'Data de Nascimento deve ser no passado.'; isValid = false; }
@@ -170,8 +186,9 @@ const handleRegister = async () => {
     router.push('/login');
 
   } catch (err) {
-    addNotification({ type: 'error', message: 'Falha ao registrar. Verifique seus dados e tente novamente.' });
-    console.error('Registration failed in component:', err);
+    const backendMsg = err.response?.data?.message || err.response?.data?.error || 'Falha ao registrar. Verifique seus dados e tente novamente.';
+    addNotification({ type: 'error', message: backendMsg });
+    console.error('Registration failed:', err.response?.data || err);
   }
 };
 </script>
