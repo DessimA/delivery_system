@@ -14,41 +14,41 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/restaurante")
+@RequestMapping("/api/restaurant")
 @RequiredArgsConstructor
-public class RestauranteController {
+public class RestaurantController {
 
     private final ProductService productService;
     private final EstablishmentService establishmentService;
     private final EstablishmentMapper establishmentMapper;
 
-    @GetMapping("/meu-estabelecimento")
-    public EstablishmentResponseDTO getMeuEstabelecimento() {
+    @GetMapping("/my-establishment")
+    public EstablishmentResponseDTO getMyEstablishment() {
         return establishmentMapper.toResponseDTO(establishmentService.findMyEstablishment());
     }
 
-    @GetMapping("/meus-produtos")
-    public List<ProductResponseDTO> getMeusProdutos() {
+    @GetMapping("/my-products")
+    public List<ProductResponseDTO> getMyProducts() {
         return productService.listMyProducts();
     }
 
-    @PostMapping(value = "/produtos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ProductResponseDTO criarProduto(
+    @PostMapping(value = "/products", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ProductResponseDTO createProduct(
             @RequestPart("data") ProductRequestDTO dto,
             @RequestPart(value = "image", required = false) MultipartFile image) {
         return productService.createProduct(dto, image);
     }
 
-    @PutMapping(value = "/produtos/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ProductResponseDTO atualizarProduto(
+    @PutMapping(value = "/products/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ProductResponseDTO updateProduct(
             @PathVariable Long id,
             @RequestPart("data") ProductRequestDTO dto,
             @RequestPart(value = "image", required = false) MultipartFile image) {
         return productService.updateProduct(id, dto, image);
     }
 
-    @DeleteMapping("/produtos/{id}")
-    public void deletarProduto(@PathVariable Long id) {
+    @DeleteMapping("/products/{id}")
+    public void deleteProduct(@PathVariable Long id) {
         productService.delete(id);
     }
 }

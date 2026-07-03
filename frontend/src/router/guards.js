@@ -19,10 +19,6 @@ export async function authGuard(to, from, next) {
     const userRoles = authStore.userRoles;
     const hasRequiredRole = requiredRoles.some(role => userRoles.includes(`ROLE_${role}`));
     
-    // Note: Backend roles are prefixed with ROLE_, but router uses the simple name.
-    // Fixed logic above to account for ROLE_ prefix if needed or standardizing names.
-    // Let's standardize: router roles will be ADMIN, USER, etc. Backend returns ROLE_ADMIN.
-    
     if (!hasRequiredRole) {
       return next({ name: 'Home' }); 
     }

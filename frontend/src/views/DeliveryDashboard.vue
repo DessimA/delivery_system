@@ -42,9 +42,9 @@
             <BaseButton v-if="delivery.status === 'COLETADA'" size="sm" variant="secondary" @click="handleUpdateStatus(delivery.id, 'EM_ROTA')" :loading="isActionLoading">Iniciar Rota</BaseButton>
             <BaseButton v-if="delivery.status === 'EM_ROTA'" size="sm" variant="primary" @click="handleUpdateStatus(delivery.id, 'ENTREGUE')" :loading="isActionLoading">Finalizar Entrega</BaseButton>
           </div>
-        </div>
-        <div v-if="delivery.status === 'EM_ROTA'" class="map-simulation">
-          <img src="/images/map.png" alt="Mapa simulado" />
+          <div v-if="delivery.status === 'EM_ROTA'" class="map-simulation">
+            <img src="/images/map.png" alt="Mapa simulado" />
+          </div>
         </div>
       </div>
       <EmptyState v-else title="Nenhuma entrega atribuída" description="Aceite uma entrega da lista acima para começar." />
@@ -54,9 +54,9 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import api from '@/plugins/axios';
 import { useApi } from '@/composables/useApi';
 import { useNotifications } from '@/composables/useNotifications';
+import { deliveryService } from '@/services/delivery.service';
 
 import BaseButton from '@/components/base/BaseButton.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
@@ -74,24 +74,21 @@ onMounted(() => {
 });
 
 async function fetchAllDeliveries() {
-  fetchAvailableDeliveries();
-  fetchMyDeliveries();
+  await Promise.all([fetchAvailableDeliveries(), fetchMyDeliveries()]);
 }
 
 async function fetchAvailableDeliveries() {
   try {
-    const response = await execAvailable(() => api.get('/api/deliveries/available'));
-    availableDeliveries.value = response.data;
+    availableDeliveries.value = await execAvailable(() => deliveryService.getAvailable());
   } catch (err) {
-    addNotification({ type: 'error', message: 'Falha ao carregar entregas disponíveis.' });
+    addNotification({ type: 'error', message: 'Falha ao carregar entregas disponiveis.' });
     console.error('Failed to fetch available deliveries:', err);
   }
 }
 
 async function fetchMyDeliveries() {
   try {
-    const response = await execMine(() => api.get('/api/deliveries/mine'));
-    myDeliveries.value = response.data;
+    myDeliveries.value = await execMine(() => deliveryService.getMine());
   } catch (err) {
     addNotification({ type: 'error', message: 'Falha ao carregar suas entregas.' });
     console.error('Failed to fetch my deliveries:', err);
@@ -100,7 +97,7 @@ async function fetchMyDeliveries() {
 
 async function handleAcceptDelivery(deliveryId) {
   try {
-    await execAction(() => api.post(`/api/deliveries/${deliveryId}/accept`));
+    await execAction(() => deliveryService.accept(deliveryId));
     addNotification({ type: 'success', message: 'Entrega aceita com sucesso!' });
     fetchAllDeliveries();
   } catch (err) {
@@ -111,8 +108,8 @@ async function handleAcceptDelivery(deliveryId) {
 
 async function handleUpdateStatus(deliveryId, newStatus) {
   try {
-    await execAction(() => api.put(`/api/deliveries/${deliveryId}/status?status=${newStatus}`));
-    addNotification({ type: 'success', message: `Status da entrega atualizado para ${newStatus}!` });
+    await execAction(() => deliveryService.updateStatus(deliveryId, newStatus));
+    addNotification({ type: 'success', message: 'Status da entrega atualizado para ' + newStatus + '!' });
     fetchAllDeliveries();
   } catch (err) {
     addNotification({ type: 'error', message: 'Falha ao atualizar status da entrega.' });

@@ -5,12 +5,12 @@
       <div class="orders-filters">
         <select v-model="statusFilter" class="status-filter">
           <option value="">Todos os status</option>
-          <option value="AGUARDANDO_PAGAMENTO">Aguardando Pagamento</option>
-          <option value="PAGO">Pago</option>
-          <option value="EM_PREPARO">Em Preparo</option>
-          <option value="EM_ROTA">Em Rota</option>
-          <option value="ENTREGUE">Entregue</option>
-          <option value="CANCELADO">Cancelado</option>
+          <option value="WAITING_PAYMENT">Aguardando Pagamento</option>
+          <option value="PAID">Pago</option>
+          <option value="PREPARING">Em Preparo</option>
+          <option value="IN_TRANSIT">Em Rota</option>
+          <option value="DELIVERED">Entregue</option>
+          <option value="CANCELLED">Cancelado</option>
         </select>
       </div>
     </div>

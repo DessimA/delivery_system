@@ -1,45 +1,41 @@
-# Padrões de Desenvolvimento
+# Padroes de Desenvolvimento
 
-## 1. Convenções de Nomenclatura
-- **Idioma:** 100% Inglês para código (Backend e Frontend), banco de dados e comentários.
+## 1. Convencoes de Nomenclatura
+
+- **Idioma:** 100% Ingles para codigo (Backend e Frontend), banco de dados e comentarios.
 - **Classes Backend:** PascalCase (ex: `OrderService`).
-- **Métodos/Variáveis:** camelCase (ex: `createOrder`).
-- **Tabelas do Banco:** snake_case no plural (ex: `order_products`).
+- **Metodos/Variaveis:** camelCase (ex: `createOrder`).
+- **Tabelas do Banco:** snake_case plural (ex: `order_items`).
 - **Componentes Frontend:** PascalCase (ex: `ProductCard.vue`).
-- **Arquivos Frontend:** camelCase para arquivos não-componentes (ex: `auth.service.js`).
+- **Arquivos Frontend:** camelCase para arquivos nao-componente (ex: `auth.service.js`).
 
-## 2. Padrões de Código Backend
-- **Injeção de Dependência:** Sempre usar **Injeção via Construtor** com `@RequiredArgsConstructor`.
-- **Estratégia de DTO:** Usar **Java Records**. O contrato da API deve ser nativamente em Inglês.
-- **Tratamento de Erros:** Use `@RestControllerAdvice` e exceções de domínio.
+## 2. Padroes de Codigo Backend
 
-## 3. Padrões de Código Frontend (Vue 3)
-- **Composition API:** Usar `<script setup>` e Composables.
-- **Camada de Services:** Todas as chamadas de API devem passar pela pasta `/src/services/`.
-- **Persistência de Estado:** Usar a utilidade `storage.js` (sessionStorage).
+- **Injecao de Dependencia:** Construtor com `@RequiredArgsConstructor`.
+- **Estrategia de DTO:** Java Records. Contrato da API em Ingles.
+- **Tratamento de Erros:** `@RestControllerAdvice` com excecoes de dominio.
+
+## 3. Padroes de Codigo Frontend (Vue 3)
+
+- **Composition API:** `<script setup>` e composables.
+- **Camada de Services:** Todas as chamadas de API em `/src/services/`.
+- **Persistencia de Estado:** `storage.js` (sessionStorage).
 
 ## 4. Biblioteca de Componentes UI
-Componentes base padronizados para UX consistente:
 
-| Componente | Props Principais | Descrição |
+| Componente | Props Principais | Descricao |
 | :--- | :--- | :--- |
-| **BaseButton** | `label`, `variant`, `loading`, `icon` | Suporta variantes primary, secondary, danger e light. |
-| **BaseInput** | `id` (obrig), `label`, `modelValue`, `error` | Campo de formulário padrão com suporte a erros. |
-| **BaseModal** | `modelValue`, `title` | Overlay para diálogos com slots `default` e `footer`. |
-| **LoadingSpinner**| `size`, `color` | Indicador visual para processamento assíncrono. |
+| **BaseButton** | `label`, `variant`, `loading`, `icon` | Variantes primary, secondary, danger, light |
+| **BaseInput** | `id` (obrig), `label`, `modelValue`, `error`, `readonly` | Campo de formulario com validacao |
+| **BaseModal** | `modelValue`, `title` | Dialogo overlay com slots `default` e `footer` |
+| **LoadingSpinner** | `size`, `color` | Indicador de processamento assincrono |
 
-## 5. Melhores Práticas de Segurança
-- **Prevenção de XSS**: Vue escapa automaticamente `{{ }}`. Evite `v-html` sem sanitização.
-- **CSRF**: Axios inclui tokens CSRF se fornecidos pelo backend.
-- **Dados Sensíveis**: Mascarar CPF/Cartões na UI. Nunca logar informações sensíveis.
+## 5. Boas Praticas de Seguranca
 
-## 6. Comunicação Real-time
-- **Padrão:** Usar STOMP sobre WebSocket para atualizações ao vivo.
-- **Tópicos:** Nomenclatura em Inglês (ex: `/topic/orders/{id}`).
+- **Prevencao de XSS:** Vue escapa `{{ }}` automaticamente. Evitar `v-html` sem sanitizacao.
+- **Dados Sensiveis:** Mascarar CPF na UI. Nunca logar informacoes sensiveis.
 
-## 7. Histórico de Evolução e Refatoração
-O sistema passou por uma grande refatoração para resolver os seguintes problemas identificados em auditoria:
-- **Segurança:** Migração do armazenamento de JWT do `localStorage` para o `sessionStorage` para mitigar riscos de XSS.
-- **Arquitetura:** Eliminação de chamadas diretas ao Axios nos componentes através da implementação obrigatória da **Camada de Services**.
-- **Consistência:** Remoção de nomenclatura mista (Português/Inglês), estabelecendo código e contrato de API 100% em Inglês.
-- **Modularidade:** Decomposição de componentes gigantes em funcionalidades especializadas em `/src/components/features/`.
+## 6. Comunicacao em Tempo Real
+
+- **Padrao:** STOMP sobre WebSocket para atualizacoes ao vivo.
+- **Topicos:** Nomenclatura em Ingles (ex: `/topic/orders/{id}`).

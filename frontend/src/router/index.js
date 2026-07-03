@@ -28,6 +28,11 @@ const routes = [
     component: () => import('../views/RestaurantDetail.vue') 
   },
   {
+    path: '/payment/confirm/:transactionId',
+    name: 'PaymentConfirm',
+    component: () => import('../views/PaymentConfirm.vue')
+  },
+  {
     path: '/checkout/pix',
     name: 'CheckoutPix',
     component: () => import('../views/CheckoutPix.vue'),

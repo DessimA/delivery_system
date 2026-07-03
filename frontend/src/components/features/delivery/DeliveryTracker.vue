@@ -11,12 +11,11 @@
         <div class="label">{{ step.label }}</div>
       </div>
     </div>
-    <div v-if="delivery.courier" class="delivery-info">
-      <p><strong>Entregador:</strong> {{ delivery.courier.name }}</p>
-      <p><strong>Contato:</strong> {{ delivery.courier.phone || 'Não disponível' }}</p>
-      <p><strong>Tempo Estimado:</strong> {{ delivery.estimatedTime || '--' }} minutos</p>
+    <div v-if="delivery.courierId" class="delivery-info">
+      <p><strong>Entregador ID:</strong> {{ delivery.courierId }}</p>
+      <p><strong>Tempo Estimado:</strong> {{ delivery.estimatedTimeMinutes || '--' }} minutos</p>
     </div>
-    <div v-if="delivery.status === 'IN_TRANSIT'" class="map-simulation">
+    <div v-if="delivery.status === 'EM_ROTA'" class="map-simulation">
       <img src="/images/map.png" alt="Mapa simulado da entrega" />
     </div>
   </div>

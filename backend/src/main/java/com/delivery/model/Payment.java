@@ -3,6 +3,7 @@ package com.delivery.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -20,7 +21,8 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Double amount;
+    @Column(precision = 10, scale = 2)
+    private BigDecimal amount;
 
     @Column(name = "payment_method")
     private String paymentMethod;
@@ -32,6 +34,9 @@ public class Payment {
 
     @Column(name = "payment_date")
     private LocalDateTime paymentDate;
+
+    @Column(name = "expires_at")
+    private LocalDateTime expiresAt;
 
     @OneToOne
     @JoinColumn(name = "order_id")

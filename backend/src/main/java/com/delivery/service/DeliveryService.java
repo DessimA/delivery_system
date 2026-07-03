@@ -1,21 +1,24 @@
 package com.delivery.service;
 
-import com.delivery.dto.DeliveryRequestDTO;
 import com.delivery.dto.DeliveryResponseDTO;
+import com.delivery.event.DeliveryUpdatedEvent;
 import com.delivery.mapper.DeliveryMapper;
 import com.delivery.model.Delivery;
-import com.delivery.model.Order;
 import com.delivery.model.DeliveryStatus;
+import com.delivery.model.Order;
+import com.delivery.model.OrderStatus;
 import com.delivery.model.User;
 import com.delivery.repository.DeliveryRepository;
 import com.delivery.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,27 +31,7 @@ public class DeliveryService {
     private final OrderRepository orderRepository;
     private final DeliveryMapper deliveryMapper;
     private final SecurityService securityService;
-    private final SimpMessagingTemplate messagingTemplate;
-
-    @Transactional
-    public DeliveryResponseDTO createDelivery(DeliveryRequestDTO dto) {
-        Order order = orderRepository.findById(dto.orderId())
-                .orElseThrow(() -> new IllegalArgumentException("Order not found."));
-
-        if (order.getDelivery() != null) {
-            throw new IllegalStateException("Order already has a delivery.");
-        }
-
-        Delivery delivery = Delivery.builder()
-                .order(order)
-                .status(DeliveryStatus.PENDENTE)
-                .originAddress(dto.originAddress())
-                .destinationAddress(dto.destinationAddress())
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        return deliveryMapper.toResponseDTO(deliveryRepository.save(delivery));
-    }
+    private final ApplicationEventPublisher eventPublisher;
 
     public List<DeliveryResponseDTO> listAvailable() {
         return deliveryRepository.findByStatusAndCourierIsNull(DeliveryStatus.PENDENTE).stream()
@@ -69,9 +52,18 @@ public class DeliveryService {
         Delivery delivery = deliveryRepository.findById(id)
                 .orElseThrow(() -> new IllegalStateException("Delivery not found after atomic update."));
 
-        notifyUpdate(delivery);
+        eventPublisher.publishEvent(new DeliveryUpdatedEvent(delivery));
         return deliveryMapper.toResponseDTO(delivery);
     }
+
+    private static final Map<DeliveryStatus, Set<DeliveryStatus>> VALID_TRANSITIONS = Map.of(
+        DeliveryStatus.PENDENTE, Set.of(DeliveryStatus.ACEITA, DeliveryStatus.CANCELADA),
+        DeliveryStatus.ACEITA, Set.of(DeliveryStatus.COLETADA, DeliveryStatus.CANCELADA),
+        DeliveryStatus.COLETADA, Set.of(DeliveryStatus.EM_ROTA, DeliveryStatus.CANCELADA),
+        DeliveryStatus.EM_ROTA, Set.of(DeliveryStatus.ENTREGUE, DeliveryStatus.CANCELADA),
+        DeliveryStatus.ENTREGUE, Set.of(),
+        DeliveryStatus.CANCELADA, Set.of()
+    );
 
     @Transactional
     public DeliveryResponseDTO updateStatus(Long id, DeliveryStatus newStatus) {
@@ -79,24 +71,18 @@ public class DeliveryService {
                 .orElseThrow(() -> new IllegalArgumentException("Delivery not found."));
 
         verifyAuthorization(delivery);
-        
-        delivery.setStatus(newStatus);
-        if (newStatus == DeliveryStatus.ENTREGUE) {
-            delivery.setDeliveredAt(LocalDateTime.now());
-            delivery.getOrder().setStatus("DELIVERED");
-            orderRepository.save(delivery.getOrder());
+
+        Set<DeliveryStatus> allowed = VALID_TRANSITIONS.get(delivery.getStatus());
+        if (allowed == null || !allowed.contains(newStatus)) {
+            throw new IllegalStateException("Cannot transition from " + delivery.getStatus() + " to " + newStatus);
         }
+
+        delivery.setStatus(newStatus);
+        syncOrderStatus(delivery, newStatus);
 
         Delivery saved = deliveryRepository.save(delivery);
-        notifyUpdate(saved);
+        eventPublisher.publishEvent(new DeliveryUpdatedEvent(saved));
         return deliveryMapper.toResponseDTO(saved);
-    }
-
-    private void notifyUpdate(Delivery delivery) {
-        if (delivery.getOrder() != null) {
-            String topic = "/topic/orders/" + delivery.getOrder().getId();
-            messagingTemplate.convertAndSend(topic, deliveryMapper.toResponseDTO(delivery));
-        }
     }
 
     public List<DeliveryResponseDTO> listMyDeliveries() {
@@ -105,6 +91,20 @@ public class DeliveryService {
         return deliveryRepository.findByCourier(courier).stream()
                 .map(deliveryMapper::toResponseDTO)
                 .collect(Collectors.toList());
+    }
+
+    private void syncOrderStatus(Delivery delivery, DeliveryStatus deliveryStatus) {
+        Order order = delivery.getOrder();
+        switch (deliveryStatus) {
+            case ACEITA -> order.setStatus(OrderStatus.PREPARING);
+            case EM_ROTA -> order.setStatus(OrderStatus.IN_TRANSIT);
+            case ENTREGUE -> {
+                order.setStatus(OrderStatus.DELIVERED);
+                delivery.setDeliveredAt(LocalDateTime.now());
+            }
+            default -> {}
+        }
+        orderRepository.save(order);
     }
 
     private void verifyAuthorization(Delivery delivery) {

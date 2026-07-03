@@ -2,6 +2,7 @@ package com.delivery.controller;
 
 import com.delivery.dto.UserRequestDTO;
 import com.delivery.dto.UserResponseDTO;
+import com.delivery.dto.UserUpdateRequestDTO;
 import com.delivery.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -38,10 +39,10 @@ public class UserController {
     }
 
     @PutMapping("/me")
-    public ResponseEntity<UserResponseDTO> updateProfile(@Valid @RequestBody UserRequestDTO userRequestDTO) {
+    public ResponseEntity<UserResponseDTO> updateProfile(@Valid @RequestBody UserUpdateRequestDTO userUpdateRequestDTO) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
-        UserResponseDTO response = userService.updateProfile(email, userRequestDTO);
+        UserResponseDTO response = userService.updateProfile(email, userUpdateRequestDTO);
         return ResponseEntity.ok(response);
     }
 }

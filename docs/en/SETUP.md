@@ -12,8 +12,8 @@ No local Java, Maven, Node.js, or npm installation required.
 ## Quick Start (VSCode Dev Container - Recommended)
 
 1. Open the project folder in VSCode
-2. `Ctrl+Shift+P` → "Dev Containers: Reopen in Container"
-3. The container will have Java 21, Maven, Node 20, and Docker CLI
+2. `Ctrl+Shift+P` -> "Dev Containers: Reopen in Container"
+3. The container has Java 21, Maven, Node 20, and Docker CLI
 4. Open a terminal inside VSCode and run:
 
 ```bash
@@ -45,15 +45,14 @@ docker compose up -d
 
 | Role | Email | Password |
 |------|-------|----------|
-| Admin | `admin@fakedata.com` | `123456` |
-| Restaurant | `pizzaria@fakedata.com` | `123456` |
+| Admin | `admin@fakedata.com` | (random, check logs) |
+| Restaurant | `pizzaria@fakedata.com` | (random, check logs) |
 
 ---
 
 ## Environment Variables
 
-All configuration is centralized in `.env` at the project root.
-Copy `.env.example` to `.env` and adjust as needed:
+All configuration is centralized in `.env` at the project root. Copy `.env.example` to `.env` and adjust:
 
 ```bash
 cp .env.example .env
@@ -109,12 +108,14 @@ docker compose exec frontend npm run test
 ## Hot Reload
 
 ### Backend (Spring Boot DevTools + inotify)
+
 1. Edit any `.java` file in `backend/src/`
-2. `inotifywait` inside the container detects the change
-3. `mvn compile` recompiles the changed files
-4. DevTools detects new classes and restarts the app (~1-2s)
+2. `inotifywait` detects the change
+3. `mvn compile` recompiles
+4. DevTools restarts the app (~1-2s)
 
 ### Frontend (Vite HMR)
+
 1. Edit any `.vue`, `.js`, or `.css` file in `frontend/src/`
 2. Vite HMR pushes the change to the browser instantly
 
@@ -153,29 +154,38 @@ flowchart LR
 ## File Structure
 
 ```text
-.project-root/
-├── .devcontainer/           # VSCode dev container setup
-│   ├── Dockerfile           #   Java 21 + Maven + Node 20
-│   └── devcontainer.json    #   Extensions, settings, Docker socket
-├── .env                     # Centralized environment variables
-├── .env.example             # Template with documentation
-├── .dockerignore            # Global Docker build exclusions
-├── backend/
-│   ├── .dockerignore
-│   ├── pom.xml              # spring-dotenv + spring-boot-devtools
-│   └── scripts/
-│       └── dev-entrypoint.sh
-├── frontend/
-│   ├── .dockerignore
-│   └── vite.config.js       # envDir: '..'
-└── infra/
-    ├── docker-compose.yml       # Development (default)
-    ├── docker-compose.prod.yml  # Production
-    └── docker/
-        ├── backend/
-        │   ├── Dockerfile       # Production (JRE, multi-stage)
-        │   └── Dockerfile.dev   # Development (JDK, Maven, inotify)
-        └── frontend/
-            ├── Dockerfile       # Production (Nginx)
-            └── Dockerfile.dev   # Development (Vite HMR)
+backend/
+  pom.xml
+  scripts/dev-entrypoint.sh
+  src/
+    main/java/com/delivery/
+      config/         # SecurityConfig, WebSocketConfig, DataLoader
+      controller/     # REST controllers
+      domain/valueobject/  # Cpf, Email
+      dto/            # Java Records
+      exception/      # ApiError, RestExceptionHandler
+      mapper/         # MapStruct interfaces
+      model/          # JPA entities
+      repository/     # Spring Data JPA
+      security/       # JWT, WebSocket auth
+      service/        # Business logic
+frontend/
+  src/
+    components/base/      # BaseButton, BaseInput, BaseModal
+    components/features/  # CartItemCard, OrderCard, ProductCard
+    composables/          # useApi, useAuth, useDebounce
+    config/               # env.js
+    plugins/              # axios.js
+    router/               # index.js, guards.js
+    services/             # auth, order, payment, product, user
+    stores/               # auth.js, cart.js
+    views/                # AppHome, AppCart, CheckoutPix, etc.
+infra/
+  docker-compose.yml
+  docker-compose.prod.yml
+  docker/
+    backend/Dockerfile
+    backend/Dockerfile.dev
+    frontend/Dockerfile
+    frontend/Dockerfile.dev
 ```

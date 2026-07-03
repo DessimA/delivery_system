@@ -1,28 +1,29 @@
 package com.delivery.service;
 
+import com.delivery.dto.OrderItemRequestDTO;
 import com.delivery.dto.OrderRequestDTO;
 import com.delivery.dto.OrderResponseDTO;
 import com.delivery.mapper.OrderMapper;
-import com.delivery.model.Delivery;
-import com.delivery.model.DeliveryStatus;
-import com.delivery.model.Establishment;
-import com.delivery.model.Order;
-import com.delivery.model.Product;
+import com.delivery.exception.ResourceNotFoundException;
+import com.delivery.model.*;
 import com.delivery.repository.OrderRepository;
 import com.delivery.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class OrderService {
 
-    private static final String DEFAULT_STATUS = "WAITING_PAYMENT";
-    private static final float DEFAULT_FEE = 5.0f;
+    private static final BigDecimal DEFAULT_FEE = BigDecimal.valueOf(5.00);
 
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
@@ -32,22 +33,48 @@ public class OrderService {
     public OrderResponseDTO createOrder(OrderRequestDTO request, Long customerId) {
         validateRequest(request);
 
-        List<Product> products = productRepository.findAllById(request.productIds());
+        List<Long> productIds = request.items().stream()
+                .map(OrderItemRequestDTO::productId)
+                .collect(Collectors.toList());
+
+        List<Product> products = productRepository.findAllById(productIds);
+
+        if (products.size() != java.util.Set.copyOf(productIds).size()) {
+            throw new ResourceNotFoundException("One or more products not found.");
+        }
 
         validateSameEstablishment(products);
+
+        Map<Long, Product> productMap = products.stream()
+                .collect(Collectors.toMap(Product::getId, p -> p));
+
+        String originAddress = resolveOriginAddress(products);
 
         Order order = Order.builder()
                 .customerId(customerId)
                 .deliveryAddress(request.deliveryAddress())
-                .products(products)
                 .orderDate(LocalDateTime.now())
-                .status(DEFAULT_STATUS)
+                .status(OrderStatus.WAITING_PAYMENT)
                 .deliveryFee(DEFAULT_FEE)
                 .build();
 
-        order.calculateTotal();
+        List<OrderItem> orderItems = new ArrayList<>();
+        for (OrderItemRequestDTO itemRequest : request.items()) {
+            Product product = productMap.get(itemRequest.productId());
+            if (product == null) {
+                throw new ResourceNotFoundException("Product not found: " + itemRequest.productId());
+            }
+            OrderItem orderItem = OrderItem.builder()
+                    .order(order)
+                    .product(product)
+                    .quantity(itemRequest.quantity())
+                    .unitPrice(product.getPrice())
+                    .build();
+            orderItems.add(orderItem);
+        }
+        order.setOrderItems(orderItems);
 
-        String originAddress = resolveOriginAddress(products);
+        order.calculateTotal();
 
         Delivery delivery = Delivery.builder()
                 .order(order)
@@ -87,8 +114,8 @@ public class OrderService {
     }
 
     private void validateRequest(OrderRequestDTO request) {
-        if (request.productIds() == null || request.productIds().isEmpty()) {
-            throw new IllegalArgumentException("A lista de produtos nao pode estar vazia.");
+        if (request.items() == null || request.items().isEmpty()) {
+            throw new IllegalArgumentException("A lista de itens nao pode estar vazia.");
         }
     }
 }

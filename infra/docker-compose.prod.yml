@@ -4,8 +4,8 @@ services:
     container_name: delivery_db
     environment:
       POSTGRES_DB: delivery_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER: ${POSTGRES_USER:?Database user is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password is required}
     ports:
       - "5432:5432"
     volumes:
@@ -28,12 +28,12 @@ services:
     env_file: ../.env
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/delivery_db
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?Database user is required}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Database password is required}
       SPRING_PROFILES_ACTIVE: prod
-      JWT_SECRET: tORPOOZxsAQzwHgc0o+seCwFz5VW0w/J4FxQUCPeBxY=
-      CORS_ORIGINS: http://localhost
-      FRONTEND_URL: http://localhost
+      JWT_SECRET: ${JWT_SECRET:?JWT secret is required}
+      CORS_ORIGINS: ${CORS_ORIGINS:?CORS origins are required}
+      FRONTEND_URL: ${FRONTEND_URL:?Frontend URL is required}
     volumes:
       - uploads_data:/app/uploads
     depends_on:

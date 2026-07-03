@@ -3,9 +3,8 @@ FROM node:20-alpine as build-stage
 
 WORKDIR /app
 
-COPY package.json ./
-RUN npm cache clean --force
-RUN npm install
+COPY package*.json ./
+RUN npm ci
 
 COPY . .
 RUN npm run build

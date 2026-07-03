@@ -67,6 +67,7 @@
 import { ref, onMounted, computed, watch } from 'vue';
 import { useApi } from '@/composables/useApi';
 import { useCartStore } from '@/stores/cart';
+import { useDebounce } from '@/composables/useDebounce';
 import { useNotifications } from '@/composables/useNotifications';
 import { productService } from '@/services/product.service';
 
@@ -85,12 +86,12 @@ const { loading, execute } = useApi();
 const cartStore = useCartStore();
 const { addNotification } = useNotifications();
 
-let debounceTimer = null;
-watch(searchTerm, (newValue) => {
-  clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(() => {
-    searchQuery.value = newValue;
-  }, 300);
+const debouncedSearch = useDebounce((value) => {
+  searchQuery.value = value;
+}, 300);
+
+watch(searchTerm, (value) => {
+  debouncedSearch(value);
 });
 
 onMounted(() => {

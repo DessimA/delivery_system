@@ -18,6 +18,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +35,16 @@ public class ProductService {
         return productRepository.findAll().stream()
                 .map(productMapper::toResponseDTO)
                 .collect(Collectors.toList());
+    }
+
+    public Page<ProductResponseDTO> listAll(Pageable pageable) {
+        return productRepository.findAll(pageable)
+                .map(productMapper::toResponseDTO);
+    }
+
+    public Page<ProductResponseDTO> search(String q, Pageable pageable) {
+        return productRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(q, q, pageable)
+                .map(productMapper::toResponseDTO);
     }
 
     public List<ProductResponseDTO> listMyProducts() {

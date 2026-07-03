@@ -9,6 +9,7 @@
         :value="modelValue"
         :placeholder="placeholder"
         :disabled="disabled"
+        :readonly="readonly"
         @input="updateValue"
         class="base-input base-textarea"
       ></textarea>
@@ -19,6 +20,7 @@
         :value="modelValue"
         :placeholder="placeholder"
         :disabled="disabled"
+        :readonly="readonly"
         @input="updateValue"
         class="base-input"
       />
@@ -57,6 +59,10 @@ const props = defineProps({
     default: '',
   },
   disabled: {
+    type: Boolean,
+    default: false,
+  },
+  readonly: {
     type: Boolean,
     default: false,
   },

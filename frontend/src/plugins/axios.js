@@ -26,16 +26,9 @@ export function setupAxiosInterceptors() {
   api.interceptors.response.use(
     (response) => response,
     async (error) => {
-      const originalRequest = error.config;
-
-      if (error.response) {
-        const { status } = error.response;
-
-        if (status === 401 && !originalRequest._retry) {
-          // Future: Implement refresh token logic here
-          authStore.logout();
-          router.push('/login');
-        }
+      if (error.response && error.response.status === 401) {
+        authStore.logout();
+        router.push('/login');
       }
 
       return Promise.reject(error);

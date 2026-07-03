@@ -32,5 +32,10 @@ export const productService = {
 
   async delete(id) {
     await api.delete(`/products/${id}`);
+  },
+
+  async getMyProducts() {
+    const response = await api.get('/restaurant/my-products');
+    return response.data;
   }
 };

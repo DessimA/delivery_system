@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @RestController
 @RequestMapping("/api/products")
@@ -19,8 +21,13 @@ public class ProductController {
     private final ProductService productService;
 
     @GetMapping
-    public ResponseEntity<List<ProductResponseDTO>> listAll() {
-        return ResponseEntity.ok(productService.listAll());
+    public ResponseEntity<List<ProductResponseDTO>> listAll(
+            @RequestParam(value = "q", required = false) String query,
+            Pageable pageable) {
+        if (query != null && !query.isBlank()) {
+            return ResponseEntity.ok(productService.search(query, pageable).getContent());
+        }
+        return ResponseEntity.ok(productService.listAll(pageable).getContent());
     }
 
     @GetMapping("/{id}")

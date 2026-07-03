@@ -3,6 +3,7 @@ package com.delivery.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -12,7 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
-@ToString(exclude = {"products", "delivery"})
+@ToString(exclude = {"orderItems", "delivery"})
 @Entity
 @Table(name = "orders")
 public class Order {
@@ -24,13 +25,8 @@ public class Order {
     @Column(name = "customer_id")
     private Long customerId;
 
-    @ManyToMany
-    @JoinTable(
-            name = "order_products",
-            joinColumns = @JoinColumn(name = "order_id"),
-            inverseJoinColumns = @JoinColumn(name = "product_id")
-    )
-    private List<Product> products;
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderItem> orderItems;
 
     @Column(name = "order_date")
     private LocalDateTime orderDate;
@@ -38,21 +34,22 @@ public class Order {
     @Column(name = "delivery_address")
     private String deliveryAddress;
 
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private OrderStatus status;
 
-    @Column(name = "delivery_fee")
-    private Float deliveryFee;
+    @Column(name = "delivery_fee", precision = 10, scale = 2)
+    private BigDecimal deliveryFee;
 
-    @Column(name = "total_value")
-    private Float totalValue;
+    @Column(name = "total_value", precision = 10, scale = 2)
+    private BigDecimal totalValue;
 
     @OneToOne(mappedBy = "order", cascade = CascadeType.ALL)
     private Delivery delivery;
 
     public void calculateTotal() {
-        double productsTotal = products.stream()
-                .mapToDouble(Product::getPrice)
-                .sum();
-        this.totalValue = (float) (productsTotal + (deliveryFee != null ? deliveryFee : 0));
+        BigDecimal productsTotal = orderItems.stream()
+                .map(item -> item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        this.totalValue = productsTotal.add(deliveryFee != null ? deliveryFee : BigDecimal.ZERO);
     }
 }
