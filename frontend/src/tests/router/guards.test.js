@@ -9,11 +9,9 @@ vi.mock('@/stores/auth', () => ({
 
 describe('Router Guards', () => {
   let mockAuthStore;
-  let mockNext;
 
   beforeEach(() => {
     setActivePinia(createPinia());
-    mockNext = vi.fn();
     mockAuthStore = {
       isInitialized: true,
       isAuthenticated: false,
@@ -25,14 +23,14 @@ describe('Router Guards', () => {
 
   it('should redirect to login if route requires auth and user is not authenticated', async () => {
     const to = { matched: [{ meta: { requiresAuth: true } }], fullPath: '/orders' };
-    await authGuard(to, {}, mockNext);
-    expect(mockNext).toHaveBeenCalledWith({ name: 'Login', query: { redirect: '/orders' } });
+    const result = await authGuard(to, {});
+    expect(result).toEqual({ name: 'Login', query: { redirect: '/orders' } });
   });
 
   it('should allow access if route does not require auth', async () => {
     const to = { matched: [{ meta: { requiresAuth: false } }] };
-    await authGuard(to, {}, mockNext);
-    expect(mockNext).toHaveBeenCalledWith();
+    const result = await authGuard(to, {});
+    expect(result).toBeUndefined();
   });
 
   it('should redirect to home if user lacks required role', async () => {
@@ -42,8 +40,8 @@ describe('Router Guards', () => {
         matched: [{ meta: { requiresAuth: true } }], 
         meta: { roles: ['ADMIN'] } 
     };
-    await authGuard(to, {}, mockNext);
-    expect(mockNext).toHaveBeenCalledWith({ name: 'Home' });
+    const result = await authGuard(to, {});
+    expect(result).toEqual({ name: 'Home' });
   });
 
   it('should allow access if user has required role', async () => {
@@ -53,7 +51,7 @@ describe('Router Guards', () => {
         matched: [{ meta: { requiresAuth: true } }], 
         meta: { roles: ['ADMIN'] } 
     };
-    await authGuard(to, {}, mockNext);
-    expect(mockNext).toHaveBeenCalledWith();
+    const result = await authGuard(to, {});
+    expect(result).toBeUndefined();
   });
 });

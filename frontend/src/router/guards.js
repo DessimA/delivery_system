@@ -1,6 +1,6 @@
 import { useAuthStore } from '@/stores/auth';
 
-export async function authGuard(to, from, next) {
+export async function authGuard(to, from) {
   const authStore = useAuthStore();
 
   if (!authStore.isInitialized) {
@@ -12,7 +12,7 @@ export async function authGuard(to, from, next) {
   const isAuthenticated = authStore.isAuthenticated;
 
   if (requiresAuth && !isAuthenticated) {
-    return next({ name: 'Login', query: { redirect: to.fullPath } });
+    return { name: 'Login', query: { redirect: to.fullPath } };
   }
 
   if (isAuthenticated && requiredRoles.length > 0) {
@@ -20,9 +20,7 @@ export async function authGuard(to, from, next) {
     const hasRequiredRole = requiredRoles.some(role => userRoles.includes(`ROLE_${role}`));
     
     if (!hasRequiredRole) {
-      return next({ name: 'Home' }); 
+      return { name: 'Home' }; 
     }
   }
-
-  next();
 }
