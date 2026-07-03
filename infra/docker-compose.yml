@@ -36,13 +36,19 @@ services:
     container_name: delivery_backend
     ports:
       - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     env_file: ../.env
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/delivery_db
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-password}
       SPRING_PROFILES_ACTIVE: dev
-      JWT_SECRET: ${JWT_SECRET:-tORPOOZxsAQzwHgc0o+seCwFz5VW0w/J4FxQUCPeBxY=}
+      JWT_SECRET: ${JWT_SECRET:-ZGV2U2VjcmV0S2V5Rm9ySldUU2lnbmluZ1B1cnBvc2VzMTIzNDU2Nzg5MA==}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
     volumes:
@@ -70,7 +76,8 @@ services:
       - ../frontend/vite.config.js:/app/vite.config.js
       - /app/node_modules
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

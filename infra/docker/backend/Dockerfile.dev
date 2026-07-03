@@ -3,7 +3,7 @@ FROM eclipse-temurin:21-jdk-alpine
 WORKDIR /app
 
 # Install Maven and inotify-tools (file watcher for hot-reload)
-RUN apk add --no-cache maven inotify-tools
+RUN apk add --no-cache maven inotify-tools curl
 
 # Cache Maven dependencies (layer is reused unless pom.xml changes)
 COPY pom.xml .

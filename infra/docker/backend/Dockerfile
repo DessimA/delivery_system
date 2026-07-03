@@ -20,8 +20,9 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:21-jre-alpine AS runtime
 WORKDIR /app
 ENV SPRING_PROFILES_ACTIVE=prod
-# JDK 21 optimizations for containers
-ENV _JAVA_OPTIONS="-XX:+UseZGC -XX:+ZGenerational -Djava.awt.headless=true"
+
+# Install curl for healthcheck
+RUN apk add --no-cache curl
 
 # Copy the built JAR from the 'maven' stage
 COPY --from=maven /app/target/*.jar app.jar
@@ -32,4 +33,7 @@ USER spring:spring
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=5 \
+  CMD curl -f http://localhost:8080/actuator/health || exit 1
+
+ENTRYPOINT ["java", "-XX:+UseZGC", "-XX:+ZGenerational", "-Djava.awt.headless=true", "-jar", "app.jar"]
