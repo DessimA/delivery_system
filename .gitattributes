@@ -4,6 +4,9 @@
 # These are Windows script files and should use crlf
 *.bat           text eol=crlf
 
+# Shell scripts must use LF line endings (Docker entrypoint)
+*.sh            text eol=lf
+
 # Binary files should be left untouched
 *.jar           binary
 
