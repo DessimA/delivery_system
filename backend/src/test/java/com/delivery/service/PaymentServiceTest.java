@@ -7,6 +7,7 @@ import com.delivery.model.Payment;
 import com.delivery.model.User;
 import com.delivery.repository.OrderRepository;
 import com.delivery.repository.PaymentRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,8 +16,10 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,6 +38,12 @@ class PaymentServiceTest {
 
     @Captor private ArgumentCaptor<Payment> paymentCaptor;
 
+    @BeforeEach
+    void setUp() {
+        ReflectionTestUtils.setField(paymentService, "frontendUrl", "http://localhost:5173");
+        ReflectionTestUtils.setField(paymentService, "expirationMinutes", 30);
+    }
+
     @Test
     @DisplayName("Deve gerar PIX com sucesso quando valor confere com pedido")
     void shouldGeneratePixWhenAmountMatches() {
@@ -42,14 +51,17 @@ class PaymentServiceTest {
         Order order = Order.builder().id(1L).customerId(1L).totalValue(BigDecimal.valueOf(100.00)).build();
 
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(paymentRepository.findByOrderId(1L)).thenReturn(Optional.empty());
         when(paymentRepository.save(any(Payment.class))).thenAnswer(i -> i.getArguments()[0]);
 
         PixResponseDTO result = paymentService.createPixPayment(1L, BigDecimal.valueOf(100.00), user);
 
         assertThat(result).isNotNull();
         assertThat(result.transactionId()).isNotBlank();
+        assertThat(result.confirmationUrl()).contains("/payment/confirm/");
         verify(paymentRepository).save(paymentCaptor.capture());
         assertThat(paymentCaptor.getValue().getAmount()).isEqualByComparingTo(BigDecimal.valueOf(100.00));
+        assertThat(paymentCaptor.getValue().getExpiresAt()).isNotNull();
     }
 
     @Test
@@ -83,15 +95,15 @@ class PaymentServiceTest {
     }
 
     @Test
-    @DisplayName("Deve retornar status do pagamento quando usuario e dono")
+    @DisplayName("Deve retornar status do pagamento quando usuario e dono - busca por orderId")
     void shouldReturnStatusWhenOwner() {
         User user = User.builder().id(1L).build();
         Order order = Order.builder().id(1L).customerId(1L).build();
-        Payment payment = Payment.builder().id(1L).order(order).status("PENDING").build();
+        Payment payment = Payment.builder().id(99L).order(order).status("PENDING").build();
 
-        when(paymentRepository.findById(1L)).thenReturn(Optional.of(payment));
+        when(paymentRepository.findByOrderId(1L)).thenReturn(Optional.of(payment));
 
-        String status = paymentService.getPaymentStatus(1L, user);
+        String status = paymentService.getPaymentStatusByOrderId(1L, user);
 
         assertThat(status).isEqualTo("PENDING");
     }
@@ -101,12 +113,12 @@ class PaymentServiceTest {
     void shouldRejectStatusWhenNotOwner() {
         User user = User.builder().id(2L).build();
         Order order = Order.builder().id(1L).customerId(1L).build();
-        Payment payment = Payment.builder().id(1L).order(order).status("PENDING").build();
+        Payment payment = Payment.builder().id(99L).order(order).status("PENDING").build();
 
-        when(paymentRepository.findById(1L)).thenReturn(Optional.of(payment));
+        when(paymentRepository.findByOrderId(1L)).thenReturn(Optional.of(payment));
         when(securityService.isAdmin(user)).thenReturn(false);
 
-        assertThatThrownBy(() -> paymentService.getPaymentStatus(1L, user))
+        assertThatThrownBy(() -> paymentService.getPaymentStatusByOrderId(1L, user))
                 .isInstanceOf(SecurityException.class)
                 .hasMessageContaining("Not authorized to view this payment");
     }
@@ -115,7 +127,8 @@ class PaymentServiceTest {
     @DisplayName("Deve confirmar pagamento e atualizar status do pedido")
     void shouldConfirmPayment() {
         Order order = Order.builder().id(1L).status(OrderStatus.WAITING_PAYMENT).build();
-        Payment payment = Payment.builder().id(1L).order(order).status("PENDING").transactionId("tx-123").build();
+        Payment payment = Payment.builder().id(99L).order(order).status("PENDING")
+                .transactionId("tx-123").expiresAt(LocalDateTime.now().plusMinutes(30)).build();
 
         when(paymentRepository.findByTransactionId("tx-123")).thenReturn(Optional.of(payment));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(i -> i.getArguments()[0]);
@@ -126,5 +139,54 @@ class PaymentServiceTest {
         verify(orderRepository).save(order);
         assertThat(payment.getStatus()).isEqualTo("CONFIRMED");
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
+    }
+
+    @Test
+    @DisplayName("Nao deve gerar erro ao confirmar pagamento ja confirmado")
+    void shouldBeIdempotentOnReConfirm() {
+        Order order = Order.builder().id(1L).status(OrderStatus.PAID).build();
+        Payment payment = Payment.builder().id(99L).order(order).status("CONFIRMED")
+                .transactionId("tx-123").expiresAt(LocalDateTime.now().plusMinutes(30)).build();
+
+        when(paymentRepository.findByTransactionId("tx-123")).thenReturn(Optional.of(payment));
+
+        paymentService.confirmPayment("tx-123");
+
+        verify(paymentRepository, never()).save(any());
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve rejeitar confirmacao de pagamento expirado")
+    void shouldRejectExpiredPayment() {
+        Order order = Order.builder().id(1L).status(OrderStatus.WAITING_PAYMENT).build();
+        Payment payment = Payment.builder().id(99L).order(order).status("PENDING")
+                .transactionId("tx-123").expiresAt(LocalDateTime.now().minusMinutes(1)).build();
+
+        when(paymentRepository.findByTransactionId("tx-123")).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentService.confirmPayment("tx-123"))
+                .isInstanceOf(com.delivery.exception.PaymentExpiredException.class)
+                .hasMessageContaining("expired");
+
+        verify(paymentRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve reaproveitar pagamento PENDING existente ao gerar novamente")
+    void shouldReuseExistingPendingPayment() {
+        User user = User.builder().id(1L).build();
+        Order order = Order.builder().id(1L).customerId(1L).totalValue(BigDecimal.valueOf(100.00)).build();
+        Payment existing = Payment.builder().id(99L).order(order).status("PENDING")
+                .transactionId("existing-tx").amount(BigDecimal.valueOf(100.00))
+                .expiresAt(LocalDateTime.now().plusMinutes(30)).build();
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(paymentRepository.findByOrderId(1L)).thenReturn(Optional.of(existing));
+
+        PixResponseDTO result = paymentService.createPixPayment(1L, BigDecimal.valueOf(100.00), user);
+
+        assertThat(result.transactionId()).isEqualTo("existing-tx");
+        verify(paymentRepository, never()).save(any());
     }
 }

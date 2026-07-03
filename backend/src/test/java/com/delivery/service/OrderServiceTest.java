@@ -1,5 +1,6 @@
 package com.delivery.service;
 
+import com.delivery.dto.OrderItemRequestDTO;
 import com.delivery.dto.OrderRequestDTO;
 import com.delivery.dto.OrderResponseDTO;
 import com.delivery.mapper.OrderMapper;
@@ -35,7 +36,7 @@ class OrderServiceTest {
     void shouldCreateOrderSuccessfully() {
         // Given
         Long customerId = 1L;
-        OrderRequestDTO request = new OrderRequestDTO("Rua Teste", List.of(10L));
+        OrderRequestDTO request = new OrderRequestDTO("Rua Teste", List.of(new OrderItemRequestDTO(10L, 1)));
         Product mockProduct = Product.builder().id(10L).price(BigDecimal.valueOf(50.0)).build();
         
         when(productRepository.findAllById(any())).thenReturn(List.of(mockProduct));

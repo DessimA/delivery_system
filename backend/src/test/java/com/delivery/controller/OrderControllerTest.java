@@ -1,5 +1,6 @@
 package com.delivery.controller;
 
+import com.delivery.dto.OrderItemRequestDTO;
 import com.delivery.dto.OrderRequestDTO;
 import com.delivery.dto.OrderResponseDTO;
 import com.delivery.model.OrderStatus;
@@ -45,7 +46,7 @@ public class OrderControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser(username = "user@test.com")
     public void deveCriarPedidoComSucesso() throws Exception {
-        OrderRequestDTO pedidoRequest = new OrderRequestDTO("Rua Teste", List.of(1L, 2L));
+        OrderRequestDTO pedidoRequest = new OrderRequestDTO("Rua Teste", List.of(new OrderItemRequestDTO(1L, 1), new OrderItemRequestDTO(2L, 1)));
 
         OrderResponseDTO responseDTO = new OrderResponseDTO(
             1L, 1L, "Rua Teste", BigDecimal.valueOf(5.0), OrderStatus.WAITING_PAYMENT, null, Collections.emptyList(), BigDecimal.valueOf(45.0), null
