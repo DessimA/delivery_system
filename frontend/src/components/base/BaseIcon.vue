@@ -10,7 +10,7 @@ import {
   Edit2, Info, Lock, LogOut, Mail, MapPin, Menu, Minus, Plus,
   Search, SearchX, Settings, ShoppingCart, Store, Trash2, Trash,
   User, UserCircle, X, XCircle
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 
 const props = defineProps({
   name: {
