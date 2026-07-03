@@ -23,7 +23,6 @@
 - Every HTTP call passes through the services layer. Components never use `axios` directly.
 - Service methods return the parsed response data directly (via `response.data`), so callers work with plain objects.
 - The `useApi` composable wraps service calls with loading/error state management.
-- The `_retry` dead code was removed from the response interceptor; a full refresh token flow is a future enhancement.
 - All API paths omit the `/api` prefix since it is configured in the axios base URL.
 
 ## Data Flow
@@ -44,8 +43,4 @@ sequenceDiagram
     Service-->>Component: response.data (parsed)
 ```
 
-## Dashboard Corrections
 
-- `RestaurantDashboard.vue`: Now uses `establishment.service.js` and `product.service.js` instead of direct `api` calls. Routes updated from Portuguese (`/api/restaurante/meu-estabelecimento`) to English (`/api/restaurant/my-establishment`). Uses `v-model`/`@save` pattern consistent with `AdminDashboard.vue`.
-
-- `DeliveryDashboard.vue`: Now uses `delivery.service.js`. Template corrected to use `orderId`, `originAddress`, `destinationAddress`, `fee` fields matching the DTO. Map block moved inside `v-for` loop per delivery card. Status update sends `newStatus` as query parameter.

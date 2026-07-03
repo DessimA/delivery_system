@@ -1,6 +1,7 @@
 # Testing Guide
 
 ## 1. The Testing Pyramid
+
 ```mermaid
 pie title Test Distribution
     "Unit Tests (Services/VOs/Stores)" : 70
@@ -9,22 +10,22 @@ pie title Test Distribution
 ```
 
 ## 2. Backend Testing (JUnit 5 + Mockito)
-- **Service Tests:** Isolate business logic. Use `LENIENT` strictness where necessary.
-- **Controller Tests:** Use `@WebMvcTest` and `MockMvc`.
+
+- **Service Tests:** Isolate business logic using mocks.
+- **Controller Tests:** `@WebMvcTest` with `MockMvc`.
 - **Naming:** `should[ExpectedBehavior]When[Condition]`.
 
 ## 3. Frontend Testing (Vitest + Vue Test Utils)
-- **Structure:** Tests are located in `src/tests/` using `*.test.js` naming.
-- **Unit Tests:** Test Pinia stores and logic composables in isolation.
-    - Always use `setActivePinia(createPinia())` in `beforeEach`.
+
+- **Structure:** Tests in `src/tests/` with `*.test.js` naming.
+- **Unit Tests:** Test Pinia stores and composables in isolation. Use `setActivePinia(createPinia())` in `beforeEach`.
 - **Component Tests:** Mount components and simulate interactions.
-    - Use `data-testid` for resilient element selection.
 - **Mocks:** Use `vi.mock` to isolate dependencies (Axios, Router).
 - **Commands:**
-    - `npm run test`: Run all tests.
-    - `npm run test -- --coverage`: Generate coverage report.
+  - `npm run test`: Run all tests.
+  - `npm run test -- --coverage`: Generate coverage report.
 
 ## 4. Quality Gates
-- **H2 Database:** Used for fast in-memory execution during build.
-- **Null Safety:** Strict use of `@NonNull` and validation annotations.
-- **TDD:** Write tests before implementation whenever feasible.
+
+- **Null Safety:** Strict use of validation annotations.
+- **Portfolio context:** The project simulates external services (payment via QR Code link, static map image for tracking) instead of integrating real APIs. Tests reflect these simulated flows.

@@ -2,66 +2,34 @@
 
 ## Files
 
-- `controller/OrderController.java`: REST controller with `POST /api/orders` (authenticated, creates order) and `GET /api/orders/me` (returns current user's orders with eager-loaded products and delivery).
+- `model/Order.java`: JPA entity. Replaced `@ManyToMany products` with `@OneToMany orderItems` to support quantities. `calculateTotal()` now sums `unitPrice * quantity` per item.
 
-- `service/OrderService.java`: Business logic for order creation. Validates product list (non-empty, all IDs exist, all from same establishment), creates an `Order` with `WAITING_PAYMENT` status, creates a `Delivery` in `PENDENTE` status, and persists everything in one transaction.
+- `model/OrderItem.java`: New JPA entity representing a single product line in an order. Stores `product` (ManyToOne), `quantity`, and `unitPrice` (snapshot of the price at order time).
 
-- `model/Order.java`: JPA entity with `@ManyToMany` products, `@OneToOne` delivery, BigDecimal `deliveryFee` and `totalValue`, and `@Enumerated(EnumType.STRING) OrderStatus`. `calculateTotal()` sums product prices plus delivery fee.
+- `dto/OrderRequestDTO.java`: Accepts `List<OrderItemRequestDTO>`. Each item carries `productId` and `quantity`.
 
-- `model/OrderStatus.java`: Enum with `WAITING_PAYMENT, PAID, PREPARING, IN_TRANSIT, DELIVERED, CANCELLED`.
+- `dto/OrderItemRequestDTO.java`: New record with `productId` (NotNull) and `quantity` (Min 1).
 
-- `dto/OrderRequestDTO.java`: Input DTO with `deliveryAddress` and `productIds` list.
+- `dto/OrderResponseDTO.java`: Changed `List<ProductResponseDTO> products` to `List<OrderItemResponseDTO> items`.
 
-- `dto/OrderResponseDTO.java`: Output DTO with all order fields including nested `ProductResponseDTO` list and `DeliveryResponseDTO`.
+- `dto/OrderItemResponseDTO.java`: New record with `productId`, `productName`, `productImageUrl`, `quantity`, `unitPrice`.
 
-- `repository/OrderRepository.java`: Spring Data JPA repository with `findByCustomerId` using `@EntityGraph` for products and delivery.
+- `mapper/OrderMapper.java`: Maps `orderItems` to `items`. Uses `OrderItemMapper`.
 
-- `mapper/OrderMapper.java`: MapStruct interface mapping `Order` to `OrderResponseDTO`.
+- `mapper/OrderItemMapper.java`: New MapStruct mapper converting `OrderItem` to `OrderItemResponseDTO`, resolving product name and image through the `product` relationship.
+
+- `service/OrderService.java`: `createOrder` builds `OrderItem` list from the request, snapshots `unitPrice` from `Product.getPrice()`, validates all products belong to the same establishment, and persists the order with items.
+
+- `repository/OrderRepository.java`: Uses `@EntityGraph` to eagerly fetch `orderItems`, `orderItems.product`, and `delivery`.
+
+- `repository/OrderItemRepository.java`: Standard Spring Data repository.
 
 ## Design Decisions
 
-- `OrderStatus` is a Java enum rather than a free-form string, ensuring type safety and preventing invalid states.
-- Each order creates a `Delivery` at the same time, ensuring the delivery tracking is always available from order creation.
-- Product IDs are validated to exist in the database before order creation. Duplicate IDs in the request are tolerated (Set comparison).
-- Monetary values use `BigDecimal`.
-- The `deliveryFee` default is stored in the service constant.
+- **Quantity support.** The old design lost quantity information entirely. The `order_items` table captures `quantity` and `unitPrice` as a snapshot, so price changes after ordering don't affect existing orders.
 
-## Order Creation Flow
+- **Snapshot pricing.** `unitPrice` is copied from `Product.price` at order time. This is the correct ecommerce pattern: the receipt reflects what the customer agreed to pay.
 
-```mermaid
-sequenceDiagram
-    participant Client
-    participant OrderController
-    participant OrderService
-    participant ProductRepository
-    participant OrderRepository
+- **Product relationship.** `OrderItem` has a `@ManyToOne` to `Product`, enabling the mapper to resolve product name and image without an extra query.
 
-    Client->>OrderController: POST /orders {deliveryAddress, productIds}
-    OrderController->>OrderService: createOrder(request, customerId)
-    OrderService->>OrderService: validateRequest (non-empty)
-    OrderService->>ProductRepository: findAllById(productIds)
-    ProductRepository-->>OrderService: List<Product>
-    OrderService->>OrderService: validate products.size() matches request
-    OrderService->>OrderService: validateSameEstablishment(products)
-    OrderService->>OrderService: build Order + Delivery
-    OrderService->>Order: calculateTotal()
-    OrderService->>OrderRepository: save(order)
-    OrderRepository-->>OrderService: Order (with generated ID)
-    OrderService-->>OrderController: OrderResponseDTO
-    OrderController-->>Client: 201 Created
-```
-
-## State Machine
-
-```mermaid
-stateDiagram-v2
-    [*] --> WAITING_PAYMENT
-    WAITING_PAYMENT --> PAID : Payment confirmed
-    PAID --> PREPARING : Restaurant starts
-    PREPARING --> IN_TRANSIT : Delivery picked up
-    IN_TRANSIT --> DELIVERED : Delivered
-    WAITING_PAYMENT --> CANCELLED : Before payment
-    PAID --> CANCELLED : Refund
-    PREPARING --> CANCELLED : Cancel
-    IN_TRANSIT --> CANCELLED : Cancel
-```
+- **Cascade.** `Order.orderItems` uses `CascadeType.ALL` and `orphanRemoval=true`, so items are persisted and removed with the order.

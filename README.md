@@ -28,7 +28,7 @@ docker compose up -d
 | Swagger UI | http://localhost:8080/swagger-ui.html | - |
 | pgAdmin | http://localhost:5050 | `admin@delivery.com` / `admin` |
 
-Sample users (dev profile only): `admin@fakedata.com` / `123456`
+Sample users (dev profile only): Create a new account via `/register` or use the admin account `admin@fakedata.com`.
 
 ---
 
@@ -57,15 +57,14 @@ See `.env.example` for the full list with descriptions.
 
 ## Hot Reload
 
-- **Backend:** Edit `.java` files -> `inotifywait` detects changes -> `mvn compile` -> DevTools restarts the app (~1-2s)
-- **Frontend:** Edit `.vue`/`.js`/`.css` files -> Vite HMR updates the browser instantly
+- **Backend:** Edit `.java` files, `inotifywait` detects changes, `mvn compile` + DevTools restart (~1-2s)
+- **Frontend:** Edit `.vue`/`.js`/`.css` files, Vite HMR updates the browser instantly
 
 ---
 
 ## Project Structure
 
 ```
-.devcontainer/          # VSCode dev container (Java 21 + Node 20 + Docker)
 backend/                # Spring Boot 3.4.1 / Java 21
   src/main/java/
     config/             # Security, WebSocket, DataLoader
@@ -137,10 +136,10 @@ docker compose -f docker-compose.prod.yml up -d
 | Tier | Technology |
 |------|-----------|
 | Backend | Java 21 (Virtual Threads), Spring Boot 3.4.1, Spring Security, Spring Data JPA |
-| Frontend | Vue 3 (Composition API), Vite, Pinia, Axios, BootstrapVueNext |
+| Frontend | Vue 3 (Composition API), Vite, Pinia, Axios |
 | Database | PostgreSQL 16, Flyway migrations |
 | Real-time | WebSocket, STOMP, SockJS |
-| Mapping | MapStruct 1.6.3 |
+| Mapping | MapStruct |
 | Auth | Stateless JWT (Bearer) |
 | Storage | Local filesystem (FileStorageService interface, swappable to S3/Cloudinary) |
 
@@ -153,9 +152,16 @@ docker compose -f docker-compose.prod.yml up -d
 | [Architecture](docs/en/ARCHITECTURE.md) | Layered architecture, DDD, data flow |
 | [Standards](docs/en/STANDARDS.md) | Naming conventions, DTO strategy, component library |
 | [Testing](docs/en/TESTING.md) | Testing pyramid, backend/frontend patterns |
-| [Setup Guide](docs/en/SETUP.md) | Detailed Docker setup, commands, architecture diagram |
-| [Infrastructure Changelog](docs/changes/infra.md) | Docker/devcontainer/environment changes |
-| [Security Fixes](docs/changes/seguranca.md) | SEC audit items and corrections |
-| [Payment Fixes](docs/changes/pagamento.md) | Payment flow, race conditions, indexes |
-| [Delivery Fixes](docs/changes/entrega.md) | Delivery bugs, exception handling, entity fixes |
-| [Test Coverage](docs/changes/testes.md) | Test results and identified gaps |
+| [Setup Guide](docs/en/SETUP.md) | Docker setup, commands, architecture diagram |
+
+### Module Documentation
+
+| Module | Description |
+|--------|-------------|
+| [Payment](docs/en/modules/payment.md) | Simulated PIX payment flow via QR Code and confirmation link |
+| [Order](docs/en/modules/order.md) | Order creation with item quantities and price snapshots |
+| [User](docs/en/modules/user.md) | Registration, profile update, CPF/email uniqueness |
+| [Establishment](docs/en/modules/establishment.md) | CRUD with active filter, restaurant ownership |
+| [Security](docs/en/modules/security.md) | JWT auth, WebSocket authentication, authorization rules |
+| [Delivery](docs/en/modules/delivery.md) | Delivery lifecycle, status transitions, N+1 prevention |
+| [Frontend Services](docs/en/modules/frontend-services.md) | API service layer, Axios interceptors, data flow |
