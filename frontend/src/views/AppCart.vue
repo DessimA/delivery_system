@@ -130,7 +130,10 @@ const handlePlaceOrder = async () => {
     await execute(async () => {
       const pedidoPayload = {
         deliveryAddress: checkoutForm.deliveryAddress,
-        productIds: cartStore.items.map(item => item.id),
+        items: cartStore.items.map(item => ({
+          productId: item.id,
+          quantity: item.quantity || 1
+        })),
       };
       
       const novoPedido = await orderService.create(pedidoPayload);

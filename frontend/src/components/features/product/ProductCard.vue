@@ -32,6 +32,7 @@
 </template>
 
 <script setup>
+import { BACKEND_URL } from '@/config/env';
 import BaseButton from '@/components/base/BaseButton.vue';
 
 const props = defineProps({
@@ -54,9 +55,7 @@ const formatCurrency = (value) => {
 const getProductImage = (product) => {
   if (product.imageUrl) {
     if (!product.imageUrl.startsWith('http')) {
-        // Use environment variable for backend URL if possible
-        const backendUrl = import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:8080';
-        return `${backendUrl}/uploads/${product.imageUrl}`;
+        return `${BACKEND_URL}/uploads/${product.imageUrl}`;
     }
     return product.imageUrl;
   }

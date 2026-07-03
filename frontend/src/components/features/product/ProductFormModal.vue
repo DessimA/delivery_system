@@ -122,6 +122,9 @@ watch(() => props.product, (newProduct) => {
 
 watch(() => props.modelValue, (newVal) => {
   if (!newVal) {
+    if (form.value.imageUrl && form.value.imageUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(form.value.imageUrl);
+    }
     form.value = { ...defaultForm };
     errors.value = {};
   }

@@ -107,7 +107,11 @@ const openEditModal = () => {
 
 const handleUpdateProfile = async () => {
   try {
-    const updatedUser = await execute(() => userService.updateProfile(editForm)); 
+    const payload = { ...editForm };
+    if (!payload.password) {
+      delete payload.password;
+    }
+    const updatedUser = await execute(() => userService.updateProfile(payload)); 
     authStore.setUser(updatedUser);
     
     addNotification({ type: 'success', message: 'Perfil atualizado com sucesso!' });

@@ -12,8 +12,8 @@
 
     <div class="order-card__content">
       <div class="order-items">
-        <p v-for="item in order.products" :key="item.id" class="order-item">
-          <span class="item-quantity">1x</span> {{ item.name }}
+        <p v-for="item in order.items" :key="item.productId" class="order-item">
+          <span class="item-quantity">{{ item.quantity }}x</span> {{ item.productName }}
         </p>
       </div>
       <div class="order-address">

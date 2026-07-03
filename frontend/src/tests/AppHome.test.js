@@ -5,7 +5,6 @@ import { createPinia, setActivePinia } from 'pinia';
 import { useCartStore } from '../stores/cart';
 import { productService } from '@/services/product.service';
 
-// Mock the useApi composable
 vi.mock('@/composables/useApi', () => ({
   useApi: () => ({
     loading: false,
@@ -13,14 +12,12 @@ vi.mock('@/composables/useApi', () => ({
   }),
 }));
 
-// Mock the useNotifications composable
 vi.mock('@/composables/useNotifications', () => ({
   useNotifications: () => ({
     addNotification: vi.fn(),
   }),
 }));
 
-// Mock productService
 vi.mock('@/services/product.service', () => ({
   productService: {
     getAll: vi.fn(() => Promise.resolve([])),
@@ -31,7 +28,7 @@ describe('AppHome', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     const cartStore = useCartStore();
-    cartStore.items = []; // Clear cart items before each test
+    cartStore.items = [];
   });
 
   afterEach(() => {
@@ -71,7 +68,7 @@ describe('AppHome', () => {
           BaseButton: true,
           BaseInput: true,
           EmptyState: true,
-          ProductCard: false, // Don't stub to check internal content
+          ProductCard: false,
           ProductCardSkeleton: true,
           BaseIcon: true,
         },
@@ -83,5 +80,7 @@ describe('AppHome', () => {
     await wrapper.vm.$nextTick();
 
     expect(productService.getAll).toHaveBeenCalled();
+    expect(wrapper.findAllComponents({ name: 'ProductCard' }).length).toBe(1);
+    expect(wrapper.text()).toContain('Pizza');
   });
 });

@@ -7,7 +7,7 @@
     </div>
     <div v-else-if="pixData">
       <div class="qr-code-container">
-        <img :src="`data:image/png;base64,${pixData.qrCode}`" alt="QR Code PIX" />
+        <canvas ref="qrCanvas"></canvas>
       </div>
       <div class="copy-paste-container">
         <p>Ou copie e cole:</p>
@@ -15,6 +15,12 @@
         <BaseButton @click="copyToClipboard(pixData.copyPaste)">Copiar</BaseButton>
       </div>
       <p class="expiration-info">Expira em: {{ formatDate(pixData.expiresAt) }}</p>
+      <BaseButton
+        label="Simular pagamento"
+        variant="primary"
+        size="lg"
+        @click="openConfirmationLink"
+      />
       <div class="waiting-payment">
         <LoadingSpinner />
         <p>Aguardando confirmação do pagamento...</p>
@@ -27,11 +33,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useApi } from '@/composables/useApi';
 import { useNotifications } from '@/composables/useNotifications';
 import { paymentService } from '@/services/payment.service';
+import QRCode from 'qrcode';
 import LoadingSpinner from '@/components/base/LoadingSpinner.vue';
 import BaseInput from '@/components/base/BaseInput.vue';
 import BaseButton from '@/components/base/BaseButton.vue';
@@ -42,6 +49,7 @@ const { loading, execute } = useApi();
 const { addNotification } = useNotifications();
 
 const pixData = ref(null);
+const qrCanvas = ref(null);
 let paymentCheckInterval = null;
 
 onMounted(async () => {
@@ -57,6 +65,10 @@ onMounted(async () => {
   try {
     const data = await execute(() => paymentService.generatePix(parseInt(orderId), parseFloat(amount)));
     pixData.value = data;
+    await nextTick();
+    if (qrCanvas.value && data.confirmationUrl) {
+      QRCode.toCanvas(qrCanvas.value, data.confirmationUrl, { width: 250 });
+    }
     startPaymentCheck(orderId);
   } catch (error) {
     console.error('Erro ao gerar PIX:', error);
@@ -83,6 +95,12 @@ const startPaymentCheck = (orderId) => {
       console.error('Erro ao verificar status do pagamento:', error);
     }
   }, 5000);
+};
+
+const openConfirmationLink = () => {
+  if (pixData.value && pixData.value.confirmationUrl) {
+    window.open(pixData.value.confirmationUrl, '_blank');
+  }
 };
 
 const copyToClipboard = async (text) => {
@@ -119,10 +137,9 @@ h1 {
   border-radius: var(--radius-md);
   background-color: var(--color-surface);
 
-  img {
+  canvas {
     display: block;
     max-width: 250px;
-    height: auto;
   }
 }
 
