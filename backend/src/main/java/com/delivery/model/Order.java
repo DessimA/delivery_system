@@ -13,7 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
-@ToString(exclude = {"products", "delivery"})
+@ToString(exclude = {"orderItems", "delivery"})
 @Entity
 @Table(name = "orders")
 public class Order {
@@ -25,13 +25,8 @@ public class Order {
     @Column(name = "customer_id")
     private Long customerId;
 
-    @ManyToMany
-    @JoinTable(
-            name = "order_products",
-            joinColumns = @JoinColumn(name = "order_id"),
-            inverseJoinColumns = @JoinColumn(name = "product_id")
-    )
-    private List<Product> products;
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderItem> orderItems;
 
     @Column(name = "order_date")
     private LocalDateTime orderDate;
@@ -52,8 +47,8 @@ public class Order {
     private Delivery delivery;
 
     public void calculateTotal() {
-        BigDecimal productsTotal = products.stream()
-                .map(Product::getPrice)
+        BigDecimal productsTotal = orderItems.stream()
+                .map(item -> item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         this.totalValue = productsTotal.add(deliveryFee != null ? deliveryFee : BigDecimal.ZERO);
     }

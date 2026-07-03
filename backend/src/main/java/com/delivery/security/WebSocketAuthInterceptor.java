@@ -3,6 +3,7 @@ package com.delivery.security;
 import com.delivery.model.Order;
 import com.delivery.model.User;
 import com.delivery.repository.OrderRepository;
+import com.delivery.security.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -10,6 +11,7 @@ import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -25,11 +27,32 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
     private static final Pattern QUEUE_PATTERN = Pattern.compile("^/queue/.*$");
 
     private final OrderRepository orderRepository;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final CustomUserDetailsService userDetailsService;
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
-        if (accessor == null || !StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
+        if (accessor == null) {
+            return message;
+        }
+
+        if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+            String authHeader = accessor.getFirstNativeHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                String token = authHeader.substring(7);
+                if (jwtTokenProvider.validateToken(token)) {
+                    String username = jwtTokenProvider.getUsernameFromJWT(token);
+                    User user = (User) userDetailsService.loadUserByUsername(username);
+                    Authentication auth = new UsernamePasswordAuthenticationToken(
+                            user, null, user.getAuthorities());
+                    accessor.setUser(auth);
+                }
+            }
+            return message;
+        }
+
+        if (!StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
             return message;
         }
 

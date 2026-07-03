@@ -7,12 +7,10 @@ import com.delivery.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
-import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
 
@@ -21,38 +19,23 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class DataLoader implements CommandLineRunner {
 
-    private final RoleRepository roleRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final EstablishmentRepository establishmentRepository;
     private final ProductRepository productRepository;
-    private final Environment environment;
+    private final RoleRepository roleRepository;
 
     @Override
     public void run(String... args) throws Exception {
-        createRoleIfNotFound("USER");
-        Role adminRole = createRoleIfNotFound("ADMIN");
-        Role restaurantRole = createRoleIfNotFound("RESTAURANT");
-        createRoleIfNotFound("DELIVERY");
+        Role adminRole = roleRepository.findByName("ADMIN");
+        Role restaurantRole = roleRepository.findByName("RESTAURANT");
 
-        if (isDevProfile()) {
+        if (adminRole != null) {
             createAdminUser(adminRole);
+        }
+        if (restaurantRole != null) {
             createPizzaria(restaurantRole);
         }
-    }
-
-    private boolean isDevProfile() {
-        return Arrays.asList(environment.getActiveProfiles()).contains("dev");
-    }
-
-    private Role createRoleIfNotFound(String name) {
-        Role role = roleRepository.findByName(name);
-        if (role == null) {
-            role = new Role();
-            role.setName(name);
-            roleRepository.save(role);
-        }
-        return role;
     }
 
     private void createAdminUser(Role adminRole) {

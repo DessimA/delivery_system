@@ -5,6 +5,7 @@ import com.delivery.event.DeliveryUpdatedEvent;
 import com.delivery.mapper.DeliveryMapper;
 import com.delivery.model.Delivery;
 import com.delivery.model.DeliveryStatus;
+import com.delivery.model.Order;
 import com.delivery.model.OrderStatus;
 import com.delivery.model.User;
 import com.delivery.repository.DeliveryRepository;
@@ -77,11 +78,7 @@ public class DeliveryService {
         }
 
         delivery.setStatus(newStatus);
-        if (newStatus == DeliveryStatus.ENTREGUE) {
-            delivery.setDeliveredAt(LocalDateTime.now());
-            delivery.getOrder().setStatus(OrderStatus.DELIVERED);
-            orderRepository.save(delivery.getOrder());
-        }
+        syncOrderStatus(delivery, newStatus);
 
         Delivery saved = deliveryRepository.save(delivery);
         eventPublisher.publishEvent(new DeliveryUpdatedEvent(saved));
@@ -94,6 +91,20 @@ public class DeliveryService {
         return deliveryRepository.findByCourier(courier).stream()
                 .map(deliveryMapper::toResponseDTO)
                 .collect(Collectors.toList());
+    }
+
+    private void syncOrderStatus(Delivery delivery, DeliveryStatus deliveryStatus) {
+        Order order = delivery.getOrder();
+        switch (deliveryStatus) {
+            case ACEITA -> order.setStatus(OrderStatus.PREPARING);
+            case EM_ROTA -> order.setStatus(OrderStatus.IN_TRANSIT);
+            case ENTREGUE -> {
+                order.setStatus(OrderStatus.DELIVERED);
+                delivery.setDeliveredAt(LocalDateTime.now());
+            }
+            default -> {}
+        }
+        orderRepository.save(order);
     }
 
     private void verifyAuthorization(Delivery delivery) {

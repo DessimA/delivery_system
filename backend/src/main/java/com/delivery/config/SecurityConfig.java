@@ -68,12 +68,11 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/products").hasAnyAuthority("ROLE_ADMIN", "ROLE_RESTAURANT")
                 .requestMatchers(HttpMethod.PUT, "/api/products/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_RESTAURANT")
                 .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_RESTAURANT")
-                .requestMatchers(HttpMethod.POST, "/api/establishments").hasAuthority("ROLE_ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/establishments").hasAnyAuthority("ROLE_ADMIN", "ROLE_RESTAURANT")
                 .requestMatchers(HttpMethod.PUT, "/api/establishments/**").hasAuthority("ROLE_RESTAURANT")
                 .requestMatchers(HttpMethod.DELETE, "/api/establishments/**").hasAuthority("ROLE_ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/orders").hasAuthority("ROLE_ADMIN")
                 .requestMatchers("/api/restaurant/**").hasAuthority("ROLE_RESTAURANT")
-                .requestMatchers("/api/restaurante/**").hasAuthority("ROLE_RESTAURANT")
 
                 // Actuator - only health and info are exposed, sensitive endpoints require ADMIN
                 .requestMatchers("/actuator/health").permitAll()
@@ -87,6 +86,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/deliveries/mine").hasAuthority("ROLE_DELIVERY")
 
                 // Payment Routes
+                .requestMatchers("/api/payments/confirm/**").permitAll()
                 .requestMatchers("/api/payments/**").authenticated()
 
                 // Generic Authenticated Routes

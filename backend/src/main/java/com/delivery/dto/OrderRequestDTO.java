@@ -9,6 +9,6 @@ public record OrderRequestDTO(
     @NotBlank(message = "Delivery address is required")
     String deliveryAddress,
 
-    @NotEmpty(message = "At least one product is required")
-    List<Long> productIds
+    @NotEmpty(message = "At least one item is required")
+    List<OrderItemRequestDTO> items
 ) {}

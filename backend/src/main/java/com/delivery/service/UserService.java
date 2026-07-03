@@ -2,6 +2,8 @@ package com.delivery.service;
 
 import com.delivery.dto.UserRequestDTO;
 import com.delivery.dto.UserResponseDTO;
+import com.delivery.dto.UserUpdateRequestDTO;
+import com.delivery.exception.CpfAlreadyExistsException;
 import com.delivery.exception.EmailAlreadyExistsException;
 import com.delivery.mapper.UserMapper;
 import com.delivery.model.Role;
@@ -30,6 +32,10 @@ public class UserService {
             throw new EmailAlreadyExistsException("Email ja cadastrado.");
         }
 
+        if (userRepository.findByCpfValue(dto.cpf()) != null) {
+            throw new CpfAlreadyExistsException("CPF ja cadastrado.");
+        }
+
         if (dto.password() == null || dto.password().isBlank()) {
             throw new IllegalArgumentException("Password is required for registration");
         }
@@ -49,7 +55,7 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponseDTO updateProfile(String email, UserRequestDTO dto) {
+    public UserResponseDTO updateProfile(String email, UserUpdateRequestDTO dto) {
         User user = userRepository.findByEmailAddress(email);
         if (user == null) {
             throw new com.delivery.exception.UserNotFoundException("Usuario nao encontrado");

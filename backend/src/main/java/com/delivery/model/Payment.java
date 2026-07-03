@@ -35,6 +35,9 @@ public class Payment {
     @Column(name = "payment_date")
     private LocalDateTime paymentDate;
 
+    @Column(name = "expires_at")
+    private LocalDateTime expiresAt;
+
     @OneToOne
     @JoinColumn(name = "order_id")
     private Order order;

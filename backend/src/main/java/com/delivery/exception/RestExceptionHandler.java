@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
@@ -37,9 +38,14 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         return buildResponseEntity(new ApiError(HttpStatus.NOT_FOUND, ex.getMessage(), ex), request);
     }
 
-    @ExceptionHandler(EmailAlreadyExistsException.class)
-    protected ResponseEntity<Object> handleEmailAlreadyExists(EmailAlreadyExistsException ex, @NonNull WebRequest request) {
+    @ExceptionHandler({EmailAlreadyExistsException.class, CpfAlreadyExistsException.class})
+    protected ResponseEntity<Object> handleAlreadyExists(RuntimeException ex, @NonNull WebRequest request) {
         return buildResponseEntity(new ApiError(HttpStatus.CONFLICT, ex.getMessage(), ex), request);
+    }
+
+    @ExceptionHandler(PaymentExpiredException.class)
+    protected ResponseEntity<Object> handlePaymentExpired(PaymentExpiredException ex, @NonNull WebRequest request) {
+        return buildResponseEntity(new ApiError(HttpStatus.GONE, ex.getMessage(), ex), request);
     }
 
     @ExceptionHandler({SecurityException.class, AccessDeniedException.class})
@@ -60,6 +66,11 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(IllegalStateException.class)
     protected ResponseEntity<Object> handleIllegalState(IllegalStateException ex, @NonNull WebRequest request) {
         return buildResponseEntity(new ApiError(HttpStatus.CONFLICT, ex.getMessage(), ex), request);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    protected ResponseEntity<Object> handleDataIntegrityViolation(DataIntegrityViolationException ex, @NonNull WebRequest request) {
+        return buildResponseEntity(new ApiError(HttpStatus.CONFLICT, "Operation would violate data integrity.", ex), request);
     }
 
     @Override

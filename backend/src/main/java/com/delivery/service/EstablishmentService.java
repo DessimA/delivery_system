@@ -18,7 +18,7 @@ public class EstablishmentService {
     private final SecurityService securityService;
 
     public List<Establishment> findAll() {
-        return establishmentRepository.findAll();
+        return establishmentRepository.findByActiveTrue();
     }
 
     public Optional<Establishment> findById(Long id) {

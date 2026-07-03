@@ -3,6 +3,7 @@ package com.delivery.repository;
 import com.delivery.model.Delivery;
 import com.delivery.model.DeliveryStatus;
 import com.delivery.model.User;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -14,7 +15,9 @@ import java.util.Optional;
 
 @Repository
 public interface DeliveryRepository extends JpaRepository<Delivery, Long> {
+    @EntityGraph(attributePaths = {"order", "courier"})
     List<Delivery> findByStatusAndCourierIsNull(DeliveryStatus status);
+    @EntityGraph(attributePaths = {"order", "courier"})
     List<Delivery> findByCourier(User courier);
 
     @Modifying

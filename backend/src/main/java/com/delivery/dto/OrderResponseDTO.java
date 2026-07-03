@@ -12,7 +12,7 @@ public record OrderResponseDTO(
     BigDecimal deliveryFee,
     OrderStatus status,
     LocalDateTime orderDate,
-    List<ProductResponseDTO> products,
+    List<OrderItemResponseDTO> items,
     BigDecimal total,
     DeliveryResponseDTO delivery
 ) {}

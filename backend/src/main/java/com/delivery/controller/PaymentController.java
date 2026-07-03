@@ -28,10 +28,10 @@ public class PaymentController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{id}/status")
-    public ResponseEntity<String> getStatus(@PathVariable Long id) {
+    @GetMapping("/{orderId}/status")
+    public ResponseEntity<String> getStatus(@PathVariable Long orderId) {
         User user = securityService.getAuthenticatedUser();
-        return ResponseEntity.ok(paymentService.getPaymentStatus(id, user));
+        return ResponseEntity.ok(paymentService.getPaymentStatusByOrderId(orderId, user));
     }
 
     @PostMapping("/confirm/{transactionId}")
